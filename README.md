@@ -81,11 +81,24 @@ If the contents of the file look good, run the following command to calculate th
 ```
 
 The output file name will look something like this
-`epoch_101_vote_info2024-03-01-02_32.json`
+`epoch_101_vote_weights2024-03-01-02_32.json`
 Make sure the weights look reasonable for the amount each buyer paid.
 
-Now execute the votes usin these files as an input.
+Now execute the votes usin these files as an input. For this step `path/to/keypair.json` should be the path to the keypair of the script authority.
 
 ```bash
-./vmm execute-votes epoch_101_vote_info2024-03-01-02_32.json
+./vmm execute-votes epoch_101_vote_info2024-03-01-02_32.js onepoch_101_vote_weights2024-03-01-02_32.json --keypair /path/to/keypair.json
+```
+
+Before claiming votes, you need to calculate the efficiency and make sure the program does not distribute more
+rewards than the value of the SBR distributed divided by 1.2.
+
+```bash
+./vmm find-max-vote-buy epoch_101_vote_info2024-03-01-02_32.js onepoch_101_vote_weights2024-03-01-02_32.json --keypair /path/to/keypair.json
+```
+
+Now, once the voting epoch ends, the script authority can claim the rewards for all gauges for all users for the epoch.
+
+```bash
+./vmm execute-claim F72CPZ7vumQ6Z7e5ncWxkNunzcL79xkjTaiNCvZoL7Uc 101 --keypair /path/to/keypair.json
 ```

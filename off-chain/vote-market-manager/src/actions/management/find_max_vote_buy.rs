@@ -17,11 +17,17 @@ pub(crate) fn find_max_vote_buy(
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("find_max_vote_buy {:#?}", data);
     for gauge in &data.gauges {
+        if gauge.payment == 0.0 {
+            continue;
+        }
         let vote_weight = vote_infos.iter().find(|x| x.gauge == gauge.gauge);
         let delegated_votes = match vote_weight {
             Some(vote_weight) => vote_weight.votes,
             None => 0,
         };
+        if delegated_votes == 0 {
+            continue;
+        }
         println!("delegated_votes: {}", delegated_votes);
         println!("gauge_votes: {}", gauge.votes);
         // This is if we count direct votes let gauge_usd_effect = (gauge.votes + delegated_votes) as f64 * data.usd_per_vote;
