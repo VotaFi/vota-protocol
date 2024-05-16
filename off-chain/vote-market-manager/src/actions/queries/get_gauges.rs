@@ -1,14 +1,14 @@
-use std::{env, fs};
+use crate::{ANCHOR_DISCRIMINATOR_SIZE, GAUGEMEISTER};
 use anchor_lang::AccountDeserialize;
+use gauge_state::Gauge;
+use quarry_state::Quarry;
 use serde_json::Value;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
-use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
 use solana_client::rpc_filter::RpcFilterType::DataSize;
-use gauge_state::Gauge;
-use quarry_state::Quarry;
-use crate::{ANCHOR_DISCRIMINATOR_SIZE, GAUGEMEISTER};
+use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
+use std::{env, fs};
 
 pub fn get_gauges(client: RpcClient) -> () {
     let accounts = client
@@ -53,8 +53,7 @@ pub fn get_gauges(client: RpcClient) -> () {
                 break;
             }
         }
-        if let Some(quarry) = quarry_info["tokens"][index]["symbol"].as_str()
-        {
+        if let Some(quarry) = quarry_info["tokens"][index]["symbol"].as_str() {
             println!("{:?} {:?}", key, quarry);
         }
     }

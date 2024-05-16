@@ -12,7 +12,7 @@ pub fn short_address(address: &Pubkey) -> String {
     short
 }
 
-pub fn get_multiple_accounts(client: &RpcClient, keys : Vec<Pubkey>) -> Vec<Option<Account>> {
+pub fn get_multiple_accounts(client: &RpcClient, keys: Vec<Pubkey>) -> Vec<Option<Account>> {
     // get 50 accounts at a time
     let mut accounts: Vec<Option<Account>> = Vec::new();
     for keys_chunk in keys.chunks(50) {
