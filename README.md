@@ -84,7 +84,7 @@ The output file name will look something like this
 `epoch_101_vote_weights2024-03-01-02_32.json`
 Make sure the weights look reasonable for the amount each buyer paid.
 
-Now execute the votes usin these files as an input. For this step `path/to/keypair.json` should be the path to the keypair of the script authority.
+Now execute the votes using these files as an input. For this step `path/to/keypair.json` should be the path to the keypair of the script authority.
 
 ```bash
 ./vmm execute-votes epoch_101_vote_info2024-03-01-02_32.js onepoch_101_vote_weights2024-03-01-02_32.json --keypair /path/to/keypair.json
