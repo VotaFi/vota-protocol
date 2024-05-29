@@ -179,12 +179,7 @@ pub fn vote(
                 system_program: solana_program::system_program::id(),
             })
             .instructions()?;
-        let commit_result = retry_logic(
-            client,
-            script_authority,
-            &mut commit_ixs,
-            None
-        );
+        let commit_result = retry_logic(client, script_authority, &mut commit_ixs, None);
         match commit_result {
             Ok(sig) => {
                 log::info!(target: "vote",
@@ -217,7 +212,6 @@ pub fn vote(
             }
         }
     }
-
 
     Ok(())
 }

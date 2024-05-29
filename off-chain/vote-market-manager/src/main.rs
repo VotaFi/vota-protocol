@@ -61,23 +61,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
         )
         .subcommand(
-            clap::command!("get-escrow-votes").arg(
-                clap::Arg::new("config")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The config to calculate the escrow delegate"))
-                    .arg(
-                        clap::Arg::new("gauge")
-                            .required(true)
-                            .value_parser(value_parser!(String))
-                            .help("The gauge to get the votes for")
-                    )
-                    .arg(
+            clap::command!("get-escrow-votes")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to calculate the escrow delegate"),
+                )
+                .arg(
+                    clap::Arg::new("gauge")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The gauge to get the votes for"),
+                )
+                .arg(
                     clap::Arg::new("epoch")
                         .required(true)
                         .value_parser(value_parser!(u32))
-                        .help("The epoch to get the votes for")
-                    ),
+                        .help("The epoch to get the votes for"),
+                ),
         )
         .subcommand(
             clap::command!("get-direct-votes").arg(
@@ -102,9 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("the epoch for the vote buy accounts"),
                 ),
         )
-        .subcommand(
-            clap::command!("get-gauges"),
-        )
+        .subcommand(clap::command!("get-gauges"))
         .subcommand(
             clap::command!("get-escrow").arg(
                 clap::Arg::new("owner")
