@@ -87,6 +87,9 @@ pub mod vote_market {
     }
 
     pub fn increase_vote_buy(ctx: Context<IncreaseVoteBuy>, epoch: u32, amount: u64) -> Result<()> {
+        if amount == 0 {
+            return err!(errors::VoteMarketError::InvalidVoteBuyAmount);
+        }
         //Check buyer and mint
         if ctx.accounts.buyer.key() == Pubkey::default() {
             return err!(errors::VoteMarketError::InvalidBuyer);
@@ -97,11 +100,14 @@ pub mod vote_market {
         if ctx.accounts.vote_buy.buyer == Pubkey::default()
             && ctx.accounts.vote_buy.mint == Pubkey::default()
         {
-            ctx.accounts.vote_buy.buyer = ctx.accounts.buyer.key();
             ctx.accounts.vote_buy.mint = ctx.accounts.mint.key();
-        }
-        if ctx.accounts.vote_buy.buyer != ctx.accounts.buyer.key() {
-            return err!(errors::VoteMarketError::InvalidBuyer);
+            ctx.accounts.vote_buy.buyer = ctx.accounts.buyer.key();
+        } else {
+            // Only change the claimer if they increase the vote buy by more than 100%
+            if amount > ctx.accounts.vote_buy.amount {
+                msg!("setting new buyer");
+                ctx.accounts.vote_buy.buyer = ctx.accounts.buyer.key();
+            }
         }
         if ctx.accounts.vote_buy.mint != ctx.accounts.mint.key() {
             return err!(errors::VoteMarketError::InvalidMint);
@@ -390,7 +396,7 @@ pub mod vote_market {
             epoch,
             ctx.accounts.gaugemeister.current_rewards_epoch
         );
-        let mut refund_amount = ctx.accounts.vote_buy.amount;
+        let mut refund_amount = ctx.accounts.token_vault.amount;
         if epoch < ctx.accounts.gaugemeister.current_rewards_epoch {
             msg!("Claiming refund for expired claims");
         } else {

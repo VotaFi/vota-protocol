@@ -23,4 +23,6 @@ pub enum VoteMarketError {
     InvalidFee,
     #[msg("Nothing to refund")]
     InvalidRefund,
+    #[msg("Invalid vote buy amount")]
+    InvalidVoteBuyAmount,
 }
