@@ -15,7 +15,7 @@ locked-voter-state = { path = "../locked-voter-state" }
 vote-market = { path = "../../programs/vote-market" }
 base64 = "0.21.6"
 dotenv = "0.15.0"
-ahash = "=0.8.4"
+ahash = "=0.8.11"
 thiserror = "1.0.56"
 toml = "0.8.8"
 common = { path = "../common" }

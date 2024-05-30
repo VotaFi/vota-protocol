@@ -1,5 +1,8 @@
+use std::env;
 use crate::actions::rpc_retry::retry_rpc;
 use dotenv::Error;
+use helius::Helius;
+use helius::types::{Cluster, GetPriorityFeeEstimateRequest};
 use retry::delay::{Exponential, Fixed};
 use retry::{Error as RetryError, OperationResult};
 use solana_client::rpc_client::RpcClient;
@@ -16,6 +19,10 @@ pub fn retry_logic<'a>(
     ixs: &'a mut Vec<Instruction>,
     max_cus: Option<u32>,
 ) -> Result<Signature, RetryError<&'a str>> {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let api_key: &str = &*env::var("HELIUS_KEY").unwrap();
+    let cluster: Cluster = Cluster::MainnetBeta;
+    let helius: Helius = Helius::new(api_key, cluster).unwrap();
     //    let jito_client = RpcClient::new("https://mainnet.block-engine.jito.wtf/api/v1/transactions");
     let sim_ixs = ixs.clone();
     let mut sim_tx = Transaction::new_with_payer(&sim_ixs, Some(&payer.pubkey()));
@@ -94,11 +101,22 @@ pub fn retry_logic<'a>(
                 (cus as u32) + 1000,
             );
         ixs.insert(0, max_cus_ix);
-        let priority_fee = 20_000_000_000 / cus as u64;
-        println!("Priority fee: {}", priority_fee);
+        let priority_fee_response = rt.block_on(helius.rpc_client.get_priority_fee_estimate(
+            GetPriorityFeeEstimateRequest {
+                transaction: None,
+                account_keys: Some(vec!["JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4".to_string()]),
+                options: None,
+            }
+        )).unwrap();
+        //
+        let priority_fee = priority_fee_response.priority_fee_estimate.unwrap();
+        println!("Priority fee estimate: {}", priority_fee);
+        println!("Max cus: {}", cus);
+        let micro_lamports = (((priority_fee) / (cus as f64)) * 1_000_000.0) as u64;
+        println!("Priority fee: {}", micro_lamports);
         let priority_fee_ix =
             solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-                priority_fee,
+                micro_lamports,
             );
         // Add the priority fee instruction to the beginning of the transaction
         ixs.insert(0, priority_fee_ix);

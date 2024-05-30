@@ -1,0 +1,11 @@
+1) use `solana-verify` to build program and get executable hash
+
+2) use `solana-keygen` to create buffer keypair 
+
+3) use solana cli 1.18.10 to deploy buffer. specify buffer and compute unit price 
+
+4) if it fails before completion, run #3 again 
+
+(by specifying the buffer keypair, you resume where you left off)
+
+5) upon completion, use `solana-verify` to check buffer hash matches #1

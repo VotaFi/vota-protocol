@@ -19,7 +19,7 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 --file ./tests/vote-mark
 startup_wait = 10000
 
 [test.validator]
-url = "https://mainnet.helius-rpc.com/?api-key=efa64d65-80ac-4f32-a701-fba4acc33236"
+url = "https://api.mainnet-beta.solana.com"
 
 [[test.validator.account]]
 address = "28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU"
