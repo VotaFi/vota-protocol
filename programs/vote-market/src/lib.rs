@@ -509,16 +509,16 @@ pub struct IncreaseVoteBuy<'info> {
     associated_token::mint = mint,
     associated_token::authority = buyer,
     )]
-    pub buyer_token_account: Account<'info, TokenAccount>,
+    pub buyer_token_account: Box<Account<'info, TokenAccount>>,
     #[account(init_if_needed,
     payer = buyer,
     associated_token::mint = mint,
     associated_token::authority = vote_buy
     )]
-    pub token_vault: Account<'info, TokenAccount>,
+    pub token_vault: Box<Account<'info, TokenAccount>>,
     pub mint: Account<'info, Mint>,
     #[account(has_one = gaugemeister)]
-    pub config: Account<'info, VoteMarketConfig>,
+    pub config: Box<Account<'info, VoteMarketConfig>>,
     pub gaugemeister: Account<'info, gauge_state::Gaugemeister>,
     #[account(init_if_needed,
     payer = buyer,
@@ -528,11 +528,11 @@ pub struct IncreaseVoteBuy<'info> {
     config.key().as_ref(),
     gauge.key().as_ref()],
     bump)]
-    pub vote_buy: Account<'info, VoteBuy>,
+    pub vote_buy: Box<Account<'info, VoteBuy>>,
     #[account(has_one = gaugemeister, constraint = !gauge.is_disabled)]
     pub gauge: Account<'info, gauge_state::Gauge>,
     #[account(seeds = [b"allow-list".as_ref(), config.key().as_ref()], bump)]
-    pub allowed_mints: Account<'info, AllowedMints>,
+    pub allowed_mints: Box<Account<'info, AllowedMints>>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
