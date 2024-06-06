@@ -1,7 +1,7 @@
 use crate::accounts::resolve::resolve_vote_keys;
 use crate::utils::get_multiple_accounts;
 use crate::ANCHOR_DISCRIMINATOR_SIZE;
-use anchor_lang::{AccountDeserialize, AnchorDeserialize};
+use anchor_lang::AccountDeserialize;
 use gauge_state::EpochGaugeVote;
 use locked_voter_state::Escrow;
 use solana_account_decoder::UiAccountEncoding;
@@ -10,7 +10,6 @@ use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_client::rpc_filter::RpcFilterType::DataSize;
 use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
 use solana_program::pubkey::Pubkey;
-use solana_sdk::account;
 
 pub fn get_delegated_escrows(client: &RpcClient, delegate: &Pubkey) -> Vec<(Pubkey, Escrow)> {
     let accounts = client
@@ -52,7 +51,7 @@ pub(crate) fn get_escrow_votes(
 ) -> () {
     let escrows = get_delegated_escrows(client, &delegate);
     let mut epoch_gauge_votes: Vec<Pubkey> = Vec::new();
-    for (key, escrow) in escrows.clone() {
+    for (key, _escrow) in escrows.clone() {
         let vote_accounts = resolve_vote_keys(&key, gauge, epoch);
         let gauge_vote = vote_accounts.epoch_gauge_vote;
         epoch_gauge_votes.push(gauge_vote);

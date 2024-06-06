@@ -22,7 +22,7 @@ to valid paths to keypairs. Then run:
 
 ```bash
 cargo run -p account-gen
-anchor test 
+anchor test
 ```
 
 The account-gen command is only needed when the keypair is changed.

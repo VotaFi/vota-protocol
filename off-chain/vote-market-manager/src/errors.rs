@@ -4,7 +4,9 @@ use std::fmt::{Debug, Display};
 pub enum VoteMarketManagerError {
     AddressNotFound,
     PriorityFeeNotInResult,
+    #[allow(dead_code)]
     BlockHashExpired,
+    #[allow(dead_code)]
     SimulationFailed,
 }
 
