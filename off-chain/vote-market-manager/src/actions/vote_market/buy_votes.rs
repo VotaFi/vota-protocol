@@ -3,6 +3,7 @@ use crate::actions::retry_logic;
 use crate::GAUGEMEISTER;
 use anchor_client::Client;
 use solana_program::pubkey::Pubkey;
+use solana_sdk::pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 use spl_associated_token_account::get_associated_token_address;
 
@@ -26,6 +27,10 @@ pub(crate) fn buy_votes(
         &[b"allow-list".as_ref(), config.as_ref()],
         &vote_market::id(),
     );
+    if *mint == spl_token::native_mint::id() {
+        println!("got ehre");
+        panic!("Cannot buy votes with native token");
+    }
     let mut ixs = program
         .request()
         .signer(payer)
