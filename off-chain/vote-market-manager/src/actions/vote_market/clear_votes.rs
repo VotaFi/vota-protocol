@@ -5,7 +5,6 @@ use crate::{GAUGEMEISTER, LOCKER};
 use anchor_client::Client;
 use anchor_lang::AnchorDeserialize;
 use solana_client::rpc_client::RpcClient;
-use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 

@@ -8,7 +8,7 @@ use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_client::rpc_filter::RpcFilterType::DataSize;
 use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
-use std::{env, fs};
+use std::fs;
 
 pub fn get_gauges(client: RpcClient) -> () {
     let accounts = client

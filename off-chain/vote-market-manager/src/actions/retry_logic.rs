@@ -1,13 +1,11 @@
 use std::env;
 use crate::actions::rpc_retry::retry_rpc;
-use dotenv::Error;
 use helius::Helius;
 use helius::types::{Cluster, GetPriorityFeeEstimateRequest};
-use retry::delay::{Exponential, Fixed};
-use retry::{Error as RetryError, OperationResult};
+use retry::delay::Fixed;
+use retry::{Error as RetryError};
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcSendTransactionConfig, RpcSimulateTransactionConfig};
-use solana_client::rpc_response::RpcSimulateTransactionResult;
 use solana_program::instruction::Instruction;
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
@@ -17,7 +15,7 @@ pub fn retry_logic<'a>(
     client: &'a RpcClient,
     payer: &'a Keypair,
     ixs: &'a mut Vec<Instruction>,
-    max_cus: Option<u32>,
+    _max_cus: Option<u32>,
 ) -> Result<Signature, RetryError<&'a str>> {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let api_key: &str = &*env::var("HELIUS_KEY").unwrap();
@@ -72,6 +70,7 @@ pub fn retry_logic<'a>(
         });
         sim
     });
+    #[allow(unused_assignments)]
     let mut sim_cus: Option<u64> = None;
     match sim_result {
         Ok(sim) => {

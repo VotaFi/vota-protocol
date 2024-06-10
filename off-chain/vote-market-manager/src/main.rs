@@ -840,6 +840,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 *epoch,
             )?;
         }
+        #[allow(unreachable_patterns)]
         Some(("calculate-weights", matches)) => {
             let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
             let epoch_data_string = std::fs::read_to_string(epoch_data)?;
