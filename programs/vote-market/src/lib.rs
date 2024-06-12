@@ -146,6 +146,12 @@ pub mod vote_market {
         Ok(())
     }
 
+    pub fn claim_vote_payment_sol(ctx: Context<ClaimVotePaymentSol>, epoch: u32) -> Result<()> {
+        //seed checks. Doing this on the Accounts struct uses too much stack space
+
+        msg!("Claiming payment");
+        Ok(())
+    }
     pub fn claim_vote_payment(ctx: Context<ClaimVotePayment>, epoch: u32) -> Result<()> {
         //seed checks. Doing this on the Accounts struct uses too much stack space
         msg!("Claiming payment");
@@ -582,6 +588,95 @@ pub struct ClaimVotePayment<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(epoch: u32)]
+pub struct ClaimVotePaymentSol<'info> {
+    pub script_authority: Signer<'info>,
+    #[account(mut)]
+    pub seller: SystemAccount<'info>,
+    #[account(mut,
+    associated_token::mint = mint,
+    associated_token::authority = seller,
+    )]
+    pub token_vault: Box<Account<'info, TokenAccount>>,
+    #[account(mut,
+    associated_token::mint = mint,
+    associated_token::authority = admin,
+    )]
+    /// CHECK Checked by seed constraints
+    pub treasury: Box<Account<'info, TokenAccount>>,
+    /// CHECK Not enough stack space to deserialize. Only used to check treasury seeds.
+    pub admin: UncheckedAccount<'info>,
+    pub mint: Account<'info, Mint>,
+    #[account(has_one = gaugemeister, has_one = script_authority, has_one = admin)]
+    pub config: Box<Account<'info, VoteMarketConfig>>,
+    #[account(mut,
+    seeds = [b"vote-buy".as_ref(),
+    epoch.to_le_bytes().as_ref(),
+    config.key().as_ref(),
+    gauge.key().as_ref()], bump)]
+    pub vote_buy: Box<Account<'info, VoteBuy>>,
+    /// CHECK Will create and destroy ATA for this PDA signer in the instruction body.
+    #[account(mut,
+    seeds = [b"temp-ata", seller.key().as_ref()], bump)]
+    pub temp_ata_signer: UncheckedAccount<'info>,
+    #[account(mut,
+    associated_token::mint = mint,
+    associated_token::authority = temp_ata_signer,
+    )]
+    pub temp_ata: Account<'info, TokenAccount>,
+    #[account(mut, seeds = [b"vote-delegate", config.key().as_ref()], bump)]
+    pub vote_delegate: SystemAccount<'info>,
+    #[account(has_one = vote_delegate,
+    constraint = escrow.owner == seller.key(),
+    owner = locked_voter_program.key(),
+    seeds = [b"Escrow",
+    gaugemeister.locker.as_ref(),
+    escrow.owner.as_ref()],
+    bump,
+    seeds::program = locked_voter_state::id())]
+    pub escrow: Account<'info, locked_voter_state::Escrow>,
+    #[account(owner = gauge_program.key(),
+    constraint = gaugemeister.locker == escrow.locker)]
+    pub gaugemeister: Account<'info, gauge_state::Gaugemeister>,
+    #[account(has_one = gaugemeister,
+    has_one = escrow,
+    seeds=[b"GaugeVoter",
+    gaugemeister.key().as_ref(),
+    escrow.key().as_ref()], bump,
+    seeds::program = gauge_program.key(),
+    )]
+    pub gauge_voter: Account<'info, gauge_state::GaugeVoter>,
+    #[account(has_one = gauge_voter,
+    has_one = gauge,
+    seeds=[b"GaugeVote",
+    gauge_voter.key().as_ref(),
+    gauge.key().as_ref()],
+    bump,
+    seeds::program = gauge_program.key()
+    )]
+    pub gauge_vote: Account<'info, gauge_state::GaugeVote>,
+    #[account(has_one = gauge_voter, owner = gauge_program.key(),
+    seeds=[b"EpochGaugeVoter",
+    gauge_voter.key().as_ref(),
+    epoch.to_le_bytes().as_ref()],
+    bump,
+    seeds::program = gauge_program.key(),
+    )]
+    pub epoch_gauge_voter: Account<'info, gauge_state::EpochGaugeVoter>,
+    #[account(has_one = gaugemeister, constraint = !gauge.is_disabled)]
+    pub gauge: Account<'info, gauge_state::Gauge>,
+    #[account(has_one = gauge, owner = gauge_program.key())]
+    // Seeds checked in instruction body
+    pub epoch_gauge: Account<'info, gauge_state::EpochGauge>,
+    #[account(mut, owner = gauge_program.key())]
+    // Seeds checked in instruction body
+    pub epoch_gauge_vote: Account<'info, gauge_state::EpochGaugeVote>,
+    pub gauge_program: Program<'info, GaugeProgram>,
+    pub locked_voter_program: Program<'info, LockedVoterProgram>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
 #[derive(Accounts)]
 #[instruction(weight: u32)]
 pub struct Vote<'info> {

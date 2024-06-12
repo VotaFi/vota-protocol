@@ -2,6 +2,7 @@ import { Program, web3 } from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { VoteMarket } from "../target/types/vote_market";
 import { GAUGEMEISTER } from "./constants";
+import { NATIVE_MINT} from "@solana/spl-token";
 
 export async function setupConfig(
   program: Program<VoteMarket>,
@@ -18,7 +19,8 @@ export async function setupConfig(
   if (allowedMintList === undefined) {
     const mint1 = web3.PublicKey.unique();
     const mint2 = web3.PublicKey.unique();
-    allowedMintList = [mint1, mint2];
+    const mint3 = NATIVE_MINT;
+    allowedMintList = [mint1, mint2, mint3];
   }
   const gaugemeister = GAUGEMEISTER;
   const scriptAuthority = program.provider.publicKey;

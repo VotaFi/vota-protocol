@@ -138,7 +138,7 @@ describe("vote market voting phase", () => {
         let allowedMintsAccount = await program.provider.connection.getAccountInfo(
             allowedMints
         );
-        expect(allowedMintsAccount!.data.length).to.eql(8 + 4 + 32 * 2);
+        expect(allowedMintsAccount!.data.length).to.eql(8 + 4 + 32 * 3);
         await program.methods
             .updateAllowedMints([...allowedMintList, newMint1, newMint2])
             .accounts({
@@ -150,7 +150,7 @@ describe("vote market voting phase", () => {
         allowedMintsAccount = await program.provider.connection.getAccountInfo(
             allowedMints
         );
-        expect(allowedMintsAccount!.data.length).to.eql(8 + 4 + 32 * 4);
+        expect(allowedMintsAccount!.data.length).to.eql(8 + 4 + 32 * 5);
         const allowedMintsData = await program.account.allowedMints.fetch(
             allowedMints
         );
@@ -357,6 +357,9 @@ describe("vote market voting phase", () => {
             expect(e.error.errorCode.code).to.equal("InvalidMint");
         }
     });
+    it("Buyers can use SOL", async () => {
+
+    })
     it("Can vote on behalf of the user", async () => {
         const {mint, ata, mintAuth} = await setupTokens(program, payer);
 
