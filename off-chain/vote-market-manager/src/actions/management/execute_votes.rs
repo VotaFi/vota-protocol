@@ -34,13 +34,16 @@ pub(crate) fn execute_votes(
         let epoch_gauge_voter_account = client.get_account(&epoch_gauge_voter);
         // TODO: Actually need to check that all votes are committed.
         let mut skip_weights = false;
+        println!("skip_weights: {:?}", skip_weights);
         if epoch_gauge_voter_account.is_ok() {
             println!("Epoch gauge voter found. Already voted");
             skip_weights = true;
             // println!("Epoch gauge voter found, resetting");
             // reset_epoch_gauge_voter(client, script_authority, *escrow_owner, data.epoch);
         }
+        println!("skip_weights: {:?}", skip_weights);
         if !skip_weights {
+            println!("going to clear votes");
             clear_votes(
                 anchor_client,
                 client,

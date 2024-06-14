@@ -272,32 +272,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("The mints to allow for the vote buys"),
                 ),
         )
-        .subcommand(clap::command!("change-admin").
-        arg(
-                clap::Arg::new("config")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The config to change the admin for"),
-            )
-            .arg(
-                clap::Arg::new("new_admin")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The new admin for the config"),
-            ))
-        .subcommand(clap::command!("change-script-authority").
-            arg(
-                clap::Arg::new("config")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The config to change the script authority for"),
-            )
-            .arg(
-                clap::Arg::new("new_script_authority")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The new script authority for the config"),
-            ))
+        .subcommand(
+            clap::command!("change-admin")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to change the admin for"),
+                )
+                .arg(
+                    clap::Arg::new("new_admin")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The new admin for the config"),
+                ),
+        )
+        .subcommand(
+            clap::command!("change-script-authority")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to change the script authority for"),
+                )
+                .arg(
+                    clap::Arg::new("new_script_authority")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The new script authority for the config"),
+                ),
+        )
         .subcommand(clap::command!("create-token"))
         .subcommand(
             clap::command!("buy-votes")
@@ -860,12 +864,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("change-admin", matches)) => {
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
             let new_admin = Pubkey::from_str(matches.get_one::<String>("new_admin").unwrap())?;
-            actions::vote_market::change_admin::change_admin(&client, &anchor_client, &payer, config, new_admin)?;
+            actions::vote_market::change_admin::change_admin(
+                &client,
+                &anchor_client,
+                &payer,
+                config,
+                new_admin,
+            )?;
         }
         Some(("change-script-authority", matches)) => {
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
-            let new_script_authority = Pubkey::from_str(matches.get_one::<String>("new_script_authority").unwrap())?;
-            actions::vote_market::change_script_authority::change_script_authority(&client, &anchor_client, &payer, config, new_script_authority)?;
+            let new_script_authority =
+                Pubkey::from_str(matches.get_one::<String>("new_script_authority").unwrap())?;
+            actions::vote_market::change_script_authority::change_script_authority(
+                &client,
+                &anchor_client,
+                &payer,
+                config,
+                new_script_authority,
+            )?;
         }
         _ => {
             println!("No subcommand");
