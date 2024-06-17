@@ -76,12 +76,12 @@ pub(crate) fn calculate_inputs(
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     // Connect to the PostgreSQL database
-    let mut client = postgres::Client::connect(&database_url, postgres::NoTls)?;
+    let mut postgres_client = postgres::Client::connect(&database_url, postgres::NoTls)?;
 
     // Insert data into the `prices` table
     for (token, price) in &prices {
         let epoch = epoch as i32;
-        client.execute(
+        postgres_client.execute(
             "INSERT INTO prices (epoch, price, token) VALUES ($1, $2, $3)",
             &[&epoch, price, &token.to_string()],
         )?;
@@ -218,6 +218,30 @@ pub(crate) fn calculate_inputs(
         ),
         epoch_stats_json,
     )?;
+
+    // Read the database URL from the environment
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    // Connect to the PostgreSQL database
+    let mut postgres_client = postgres::Client::connect(&database_url, postgres::NoTls)?;
+
+    // Insert into the epoch_vote_info table
+    let epoch = epoch as i32;
+    let total_votes = total_votes as i64;
+    let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
+    let total_delegated_votes = total_delegated_votes as i64;
+    postgres_client.execute(
+        "INSERT INTO epoch_vote_info (epoch, totalVotes, directVotes, delegatedVotes, totalVoteBuyValue, usdPerVote) VALUES ($1, $2, $3, $4, $5, $6)",
+        &[
+            &epoch,
+            &total_votes,
+            &total_power_vote_buy_gauges,
+            &total_delegated_votes,
+            &total_vote_buy_value,
+            &usd_per_vote
+        ]
+    )?;
+
     Ok(())
 }
 
