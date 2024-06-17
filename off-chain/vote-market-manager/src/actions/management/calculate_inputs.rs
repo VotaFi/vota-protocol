@@ -16,6 +16,7 @@ use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
 use spl_token::state::Mint;
 use std::collections::HashMap;
+use std::env;
 use std::error::Error;
 use std::fs;
 use vote_market::state::VoteBuy;
@@ -70,6 +71,21 @@ pub(crate) fn calculate_inputs(
     println!("about to fetch here");
     fetch_token_prices(&mut prices, tokens)?;
     println!("finished to fetch here");
+
+    // Read the database URL from the environment
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    // Connect to the PostgreSQL database
+    let mut client = postgres::Client::connect(&database_url, postgres::NoTls)?;
+
+    // Insert data into the `prices` table
+    for (token, price) in &prices {
+        let epoch = epoch as i32;
+        client.execute(
+            "INSERT INTO prices (epoch, price, token) VALUES ($1, $2, $3)",
+            &[&epoch, price, &token.to_string()],
+        )?;
+    }
 
     // Find direct votes
 

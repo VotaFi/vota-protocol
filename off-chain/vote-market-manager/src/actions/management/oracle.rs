@@ -3,6 +3,7 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use solana_program::pubkey::Pubkey;
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
@@ -13,6 +14,13 @@ pub enum KnownTokens {
     Blze,
     Sbr,
     Meta,
+}
+
+// Implement Display for KnownTokens to convert it to a String
+impl fmt::Display for KnownTokens {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl From<String> for KnownTokens {
