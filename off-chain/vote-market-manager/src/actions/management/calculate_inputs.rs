@@ -21,6 +21,10 @@ use std::error::Error;
 use std::fs;
 use vote_market::state::VoteBuy;
 
+use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use postgres::Client;
+use postgres_openssl::MakeTlsConnector;
+
 /// Creates a json file containing all the data needed to calculate algorithmic
 /// vote weights and the maximum amount of vote buys that meet the efficiency
 /// ratio requirements for one epoch and one [`vote_market::state::VoteMarketConfig`]
@@ -71,12 +75,18 @@ pub(crate) fn calculate_inputs(
     println!("about to fetch here");
     fetch_token_prices(&mut prices, tokens)?;
     println!("finished to fetch here");
+    println!("prices: {:?}", prices);
 
-    // Read the database URL from the environment
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    // Create Ssl postgres connector without verification
+    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    builder.set_verify(SslVerifyMode::NONE);
+    let connector = MakeTlsConnector::new(builder.build());
 
     // Connect to the PostgreSQL database
-    let mut postgres_client = postgres::Client::connect(&database_url, postgres::NoTls)?;
+    let mut postgres_client = Client::connect(
+        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        connector,
+    ).unwrap();
 
     // Insert data into the `prices` table
     for (token, price) in &prices {
@@ -219,11 +229,16 @@ pub(crate) fn calculate_inputs(
         epoch_stats_json,
     )?;
 
-    // Read the database URL from the environment
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    // Create Ssl postgres connector without verification
+    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    builder.set_verify(SslVerifyMode::NONE);
+    let connector = MakeTlsConnector::new(builder.build());
 
     // Connect to the PostgreSQL database
-    let mut postgres_client = postgres::Client::connect(&database_url, postgres::NoTls)?;
+    let mut postgres_client = Client::connect(
+        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        connector,
+    ).unwrap();
 
     // Insert into the epoch_vote_info table
     let epoch = epoch as i32;
