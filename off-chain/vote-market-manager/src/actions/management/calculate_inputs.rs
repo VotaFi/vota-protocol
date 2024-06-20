@@ -68,7 +68,9 @@ pub(crate) fn calculate_inputs(
     println!("got here");
 
     // Add SBR price
+    tokens.push(KnownTokens::Meta);
     tokens.push(KnownTokens::Sbr);
+    tokens.push(KnownTokens::Uxp);
 
     // Get USD values of relevant tokens
     let mut prices: HashMap<KnownTokens, f64> = HashMap::new();
