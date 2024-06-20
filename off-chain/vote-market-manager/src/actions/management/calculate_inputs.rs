@@ -248,13 +248,14 @@ pub(crate) fn calculate_inputs(
     let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
     let total_delegated_votes = total_delegated_votes as i64;
     postgres_client.execute(
-        "INSERT INTO epoch_vote_info (epoch, totalVotes, directVotes, delegatedVotes, totalVoteBuyValue, usdPerVote) VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO epoch_vote_info (epoch, totalVotes, directVotes, delegatedVotes, totalVoteBuyValue, sbrPerEpoch, usdPerVote) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         &[
             &epoch,
             &total_votes,
             &total_power_vote_buy_gauges,
             &total_delegated_votes,
             &total_vote_buy_value,
+            &sbr_per_epoch,
             &usd_per_vote
         ]
     )?;
