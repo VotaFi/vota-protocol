@@ -4,7 +4,9 @@ use std::fmt::{Debug, Display};
 pub enum VoteMarketManagerError {
     AddressNotFound,
     PriorityFeeNotInResult,
-    SimulationFailed,
+    SimulationFailed {
+        sim_info: String,
+    },
 }
 
 impl std::error::Error for VoteMarketManagerError {}
@@ -15,7 +17,9 @@ impl Display for VoteMarketManagerError {
             VoteMarketManagerError::PriorityFeeNotInResult => {
                 write!(f, "Priority fee not in result")
             },
-            VoteMarketManagerError::SimulationFailed => write!(f, "Simulation failed"),
+            VoteMarketManagerError::SimulationFailed { sim_info } => {
+                write!(f, "Simulation failed: {}", sim_info)
+            },
         }
     }
 }

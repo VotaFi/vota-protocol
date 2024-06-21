@@ -59,7 +59,7 @@ pub fn retry_logic<'a>(
             Ok(sim) => {
                 println!("simulated: {:?}", sim);
                 if sim.value.err.is_some() {
-                    return Err(Box::new(SimulationFailed));
+                    return Err(Box::new(SimulationFailed { sim_info: sim.value.logs.unwrap().join(" ") }));
                 }
             }
             Err(e) => {
