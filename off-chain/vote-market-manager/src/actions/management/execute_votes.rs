@@ -1,9 +1,8 @@
 use crate::actions::management::data::{EpochData, VoteInfo};
 
 use crate::accounts::resolve::{
-    get_epoch_gauge_voter, get_escrow_address_for_owner, get_gauge_voter, resolve_vote_keys,
+    get_epoch_gauge_voter, get_escrow_address_for_owner, get_gauge_voter,
 };
-use crate::actions::reset_epoch_gauge_voter::reset_epoch_gauge_voter;
 use crate::actions::vote_market::clear_votes::clear_votes;
 use crate::actions::vote_market::vote::vote;
 use anchor_client::Client;

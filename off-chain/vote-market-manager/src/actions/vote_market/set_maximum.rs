@@ -36,7 +36,7 @@ pub fn set_maximum(
         .args(vote_market::instruction::SetMaxAmount { epoch, max_amount })
         .instructions()
         .unwrap();
-    let result = retry_logic(client, payer, &mut ixs, Some(20_000));
+    let result = retry_logic(client, payer, &mut ixs);
     match result {
         Ok(sig) => {
             log::info!(target: "efficiency",

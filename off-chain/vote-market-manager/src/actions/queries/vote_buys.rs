@@ -1,14 +1,12 @@
 use crate::{ANCHOR_DISCRIMINATOR_SIZE, GAUGEMEISTER};
 use anchor_lang::AccountDeserialize;
 use gauge_state::Gauge;
-use quarry_state::Quarry;
-use serde_json::Value;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_client::rpc_filter::RpcFilterType::DataSize;
 use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
 use solana_program::pubkey::Pubkey;
-use std::{env, fs};
+use std::env;
 use vote_market::state::VoteBuy;
 
 pub fn get_all_vote_buys(epoch: u32, config: &Pubkey) -> Vec<VoteBuy> {
@@ -45,7 +43,6 @@ pub fn get_all_vote_buys(epoch: u32, config: &Pubkey) -> Vec<VoteBuy> {
     let mut vote_buy_parsed_accounts: Vec<VoteBuy> = Vec::new();
     for (key, _) in &accounts {
         //find index where quarry_data.token_mint_key matches quarry_info["tokens"]["address"]
-        let mut index = 0;
         let vote_buy_address = Pubkey::find_program_address(
             &[
                 b"vote-buy".as_ref(),

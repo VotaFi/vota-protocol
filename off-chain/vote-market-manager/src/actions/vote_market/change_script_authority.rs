@@ -24,7 +24,7 @@ pub(crate) fn change_script_authority(
         })
         .instructions()
         .unwrap();
-    let result = retry_logic::retry_logic(client, payer, &mut ixs, None);
+    let result = retry_logic::retry_logic(client, payer, &mut ixs);
 
     match result {
         Ok(sig) => println!("Script authority updated: {:?}", sig),

@@ -5,7 +5,6 @@ use crate::{GAUGEMEISTER, LOCKER};
 use anchor_client::Client;
 use anchor_lang::AnchorDeserialize;
 use solana_client::rpc_client::RpcClient;
-use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -66,7 +65,7 @@ pub(crate) fn clear_votes(
             .instructions()
             .unwrap();
         println!("Clearing votes");
-        let result = retry_logic(client, script_authority, &mut vote_ixs, None);
+        let result = retry_logic(client, script_authority, &mut vote_ixs);
         match result {
             Ok(sig) => {
                 log::info!(target: "vote",

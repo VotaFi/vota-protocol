@@ -3,7 +3,6 @@ use crate::actions::retry_logic;
 use crate::GAUGEMEISTER;
 use anchor_client::Client;
 use solana_program::pubkey::Pubkey;
-use solana_sdk::pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 use spl_associated_token_account::get_associated_token_address;
 
@@ -51,7 +50,7 @@ pub(crate) fn buy_votes(
         .args(vote_market::instruction::IncreaseVoteBuy { amount, epoch })
         .instructions()
         .unwrap();
-    let result = retry_logic::retry_logic(client, payer, &mut ixs, None);
+    let result = retry_logic::retry_logic(client, payer, &mut ixs);
 
     match result {
         Ok(sig) => println!("Vote buy increased: {:?}", sig),

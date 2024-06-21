@@ -40,7 +40,7 @@ pub(crate) fn get_refund(
         })
         .instructions()
         .unwrap();
-    let result = retry_logic(client, payer, &mut ixs, Some(35_000));
+    let result = retry_logic(client, payer, &mut ixs);
     match result {
         Ok(sig) => {
             log::info!(target: "refund",

@@ -1,13 +1,10 @@
 use crate::actions::rpc_retry::retry_rpc;
-use dotenv::Error;
-use helius::types::{Cluster, GetPriorityFeeEstimateRequest, SmartTransactionConfig};
+use helius::types::{Cluster, SmartTransactionConfig};
 use helius::Helius;
-use retry::delay::{Exponential, Fixed};
-use retry::{Error as RetryError, OperationResult};
+use retry::delay::{Fixed};
+use retry::{Error as RetryError};
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcSendTransactionConfig, RpcSimulateTransactionConfig};
-use solana_client::rpc_response::RpcSimulateTransactionResult;
-use solana_program::clock::Slot;
 use solana_program::instruction::Instruction;
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
@@ -18,9 +15,8 @@ pub fn retry_logic<'a>(
     client: &'a RpcClient,
     payer: &'a Keypair,
     ixs: &'a mut Vec<Instruction>,
-    max_cus: Option<u32>,
 ) -> helius::error::Result<Signature> {
-    let debug = false;
+    let debug = true;
     let rt = tokio::runtime::Runtime::new().unwrap();
     let api_key: &str = &*env::var("HELIUS_KEY").unwrap();
     let cluster: Cluster = Cluster::MainnetBeta;
