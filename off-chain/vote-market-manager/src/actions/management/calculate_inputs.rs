@@ -88,7 +88,8 @@ pub(crate) fn calculate_inputs(
     let mut postgres_client = Client::connect(
         &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
         connector,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Insert data into the `prices` table
     for (token, price) in &prices {
@@ -240,7 +241,8 @@ pub(crate) fn calculate_inputs(
     let mut postgres_client = Client::connect(
         &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
         connector,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Insert into the epoch_vote_info table
     let epoch = epoch as i32;
