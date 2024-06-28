@@ -15,6 +15,7 @@ pub(crate) fn clear_votes(
     config: Pubkey,
     owner: Pubkey,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    println!("clearing votes");
     let program = anchor_client.program(vote_market::id())?;
     let gauges = utils::get_relevant_gauges()?;
     let vote_delegate = get_delegate(&config);
@@ -36,6 +37,7 @@ pub(crate) fn clear_votes(
     for (i, gauge) in gauges.iter().enumerate() {
         // Can only clear initialized gauge_votes
         if gauge_vote_accounts[i].is_none() {
+            println!("not found");
             continue;
         }
         let gauge_data = gauge_state::GaugeVote::deserialize(
@@ -63,7 +65,7 @@ pub(crate) fn clear_votes(
             .instructions()
             .unwrap();
         println!("Clearing votes");
-        let result = retry_logic(client, script_authority, &mut vote_ixs, None);
+        let result = retry_logic(client, script_authority, &mut vote_ixs);
         match result {
             Ok(sig) => {
                 log::info!(target: "vote",
@@ -83,5 +85,6 @@ pub(crate) fn clear_votes(
             }
         }
     }
+    println!("cleared votes");
     Ok(())
 }

@@ -336,6 +336,7 @@ pub mod vote_market {
         Ok(())
     }
 
+    /// This is used in a trait on the Accounts definition
     #[allow(unused_variables)]
     pub fn commit_vote(ctx: Context<CommitVote>, epoch: u32) -> Result<()> {
         let data: Vec<u8> =

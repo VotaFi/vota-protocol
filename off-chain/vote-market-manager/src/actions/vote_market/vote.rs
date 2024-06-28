@@ -67,7 +67,7 @@ pub fn vote(
                     gauge_program: gauge_state::id(),
                 })
                 .instructions()?;
-            let vote_result = retry_logic(client, script_authority, &mut vote_ixs, None);
+            let vote_result = retry_logic(client, script_authority, &mut vote_ixs);
             match vote_result {
                 Ok(sig) => {
                     log::info!(target: "vote",
@@ -120,8 +120,7 @@ pub fn vote(
                 data,
             };
             let mut ixs = vec![create_epoch_gauge_voter_ix];
-            let max_cus = 25_000;
-            let result = retry_logic(client, script_authority, &mut ixs, Some(max_cus));
+            let result = retry_logic(client, script_authority, &mut ixs);
             match result {
                 Ok(sig) => {
                     log::info!(target: "vote",
@@ -179,7 +178,7 @@ pub fn vote(
                 system_program: solana_program::system_program::id(),
             })
             .instructions()?;
-        let commit_result = retry_logic(client, script_authority, &mut commit_ixs, None);
+        let commit_result = retry_logic(client, script_authority, &mut commit_ixs);
         match commit_result {
             Ok(sig) => {
                 log::info!(target: "vote",

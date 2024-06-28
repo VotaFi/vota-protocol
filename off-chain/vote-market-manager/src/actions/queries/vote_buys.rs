@@ -43,7 +43,6 @@ pub fn get_all_vote_buys(epoch: u32, config: &Pubkey) -> Vec<VoteBuy> {
     let mut vote_buy_parsed_accounts: Vec<VoteBuy> = Vec::new();
     for (key, _) in &accounts {
         //find index where quarry_data.token_mint_key matches quarry_info["tokens"]["address"]
-        let mut _index = 0;
         let vote_buy_address = Pubkey::find_program_address(
             &[
                 b"vote-buy".as_ref(),

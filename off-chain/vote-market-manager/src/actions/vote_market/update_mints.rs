@@ -26,7 +26,7 @@ pub(crate) fn update_mints(
         })
         .instructions()
         .unwrap();
-    let result = retry_logic::retry_logic(client, payer, &mut ixs, None);
+    let result = retry_logic::retry_logic(client, payer, &mut ixs);
     match result {
         Ok(sig) => println!("allowed mints updated: {:?}", sig),
         Err(e) => println!("Error updating allowed mints: {:?}", e),

@@ -26,6 +26,10 @@ pub(crate) fn buy_votes(
         &[b"allow-list".as_ref(), config.as_ref()],
         &vote_market::id(),
     );
+    if *mint == spl_token::native_mint::id() {
+        println!("got ehre");
+        panic!("Cannot buy votes with native token");
+    }
     let mut ixs = program
         .request()
         .signer(payer)
@@ -46,7 +50,7 @@ pub(crate) fn buy_votes(
         .args(vote_market::instruction::IncreaseVoteBuy { amount, epoch })
         .instructions()
         .unwrap();
-    let result = retry_logic::retry_logic(client, payer, &mut ixs, None);
+    let result = retry_logic::retry_logic(client, payer, &mut ixs);
 
     match result {
         Ok(sig) => println!("Vote buy increased: {:?}", sig),

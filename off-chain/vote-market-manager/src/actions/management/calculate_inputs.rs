@@ -16,9 +16,14 @@ use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
 use spl_token::state::Mint;
 use std::collections::HashMap;
+use std::env;
 use std::error::Error;
 use std::fs;
 use vote_market::state::VoteBuy;
+
+use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use postgres::Client;
+use postgres_openssl::MakeTlsConnector;
 
 /// Creates a json file containing all the data needed to calculate algorithmic
 /// vote weights and the maximum amount of vote buys that meet the efficiency
@@ -63,13 +68,37 @@ pub(crate) fn calculate_inputs(
     println!("got here");
 
     // Add SBR price
+    tokens.push(KnownTokens::Meta);
     tokens.push(KnownTokens::Sbr);
+    tokens.push(KnownTokens::Uxp);
 
     // Get USD values of relevant tokens
     let mut prices: HashMap<KnownTokens, f64> = HashMap::new();
     println!("about to fetch here");
     fetch_token_prices(&mut prices, tokens)?;
     println!("finished to fetch here");
+    println!("prices: {:?}", prices);
+
+    // Create Ssl postgres connector without verification
+    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    builder.set_verify(SslVerifyMode::NONE);
+    let connector = MakeTlsConnector::new(builder.build());
+
+    // Connect to the PostgreSQL database
+    let mut postgres_client = Client::connect(
+        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        connector,
+    )
+    .unwrap();
+
+    // Insert data into the `prices` table
+    for (token, price) in &prices {
+        let epoch = epoch as i32;
+        postgres_client.execute(
+            "INSERT INTO prices (epoch, price, token) VALUES ($1, $2, $3)",
+            &[&epoch, price, &token.to_string()],
+        )?;
+    }
 
     // Find direct votes
 
@@ -202,6 +231,37 @@ pub(crate) fn calculate_inputs(
         ),
         epoch_stats_json,
     )?;
+
+    // Create Ssl postgres connector without verification
+    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    builder.set_verify(SslVerifyMode::NONE);
+    let connector = MakeTlsConnector::new(builder.build());
+
+    // Connect to the PostgreSQL database
+    let mut postgres_client = Client::connect(
+        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        connector,
+    )
+    .unwrap();
+
+    // Insert into the epoch_vote_info table
+    let epoch = epoch as i32;
+    let total_votes = total_votes as i64;
+    let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
+    let total_delegated_votes = total_delegated_votes as i64;
+    postgres_client.execute(
+        "INSERT INTO epoch_vote_info (epoch, totalVotes, directVotes, delegatedVotes, totalVoteBuyValue, sbrPerEpoch, usdPerVote) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        &[
+            &epoch,
+            &total_votes,
+            &total_power_vote_buy_gauges,
+            &total_delegated_votes,
+            &total_vote_buy_value,
+            &sbr_per_epoch,
+            &usd_per_vote
+        ]
+    )?;
+
     Ok(())
 }
 

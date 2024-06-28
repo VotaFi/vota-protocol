@@ -26,6 +26,8 @@ mod utils;
 
 const ANCHOR_DISCRIMINATOR_SIZE: usize = 8;
 const GAUGEMEISTER: Pubkey = pubkey!("28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU");
+
+const ADMIN: Pubkey = pubkey!("AmbWk325Nr67A5wpoHnxh967Zf4C5fQP9KHE3eeJQYWU");
 const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -272,32 +274,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("The mints to allow for the vote buys"),
                 ),
         )
-        .subcommand(clap::command!("change-admin").
-        arg(
-                clap::Arg::new("config")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The config to change the admin for"),
-            )
-            .arg(
-                clap::Arg::new("new_admin")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The new admin for the config"),
-            ))
-        .subcommand(clap::command!("change-script-authority").
-            arg(
-                clap::Arg::new("config")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The config to change the script authority for"),
-            )
-            .arg(
-                clap::Arg::new("new_script_authority")
-                    .required(true)
-                    .value_parser(value_parser!(String))
-                    .help("The new script authority for the config"),
-            ))
+        .subcommand(
+            clap::command!("change-admin")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to change the admin for"),
+                )
+                .arg(
+                    clap::Arg::new("new_admin")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The new admin for the config"),
+                ),
+        )
+        .subcommand(
+            clap::command!("change-script-authority")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to change the script authority for"),
+                )
+                .arg(
+                    clap::Arg::new("new_script_authority")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The new script authority for the config"),
+                ),
+        )
         .subcommand(clap::command!("create-token"))
         .subcommand(
             clap::command!("buy-votes")
@@ -840,33 +846,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 *epoch,
             )?;
         }
-        #[allow(unreachable_patterns)]
-        Some(("calculate-weights", matches)) => {
-            let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
-            let epoch_data_string = std::fs::read_to_string(epoch_data)?;
-            let mut data: actions::management::data::EpochData =
-                serde_json::from_str(&epoch_data_string)?;
-            let results = actions::management::calculate_weights::calculate_weights(&mut data)?;
-            println!("results {:?}", results);
-            let vote_weights_json = serde_json::to_string(&results).unwrap();
-            fs::write(
-                format!(
-                    "./epoch_{}_weights{}.json",
-                    data.epoch,
-                    Utc::now().format("%Y-%m-%d-%H_%M")
-                ),
-                vote_weights_json,
-            )?;
-        }
         Some(("change-admin", matches)) => {
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
             let new_admin = Pubkey::from_str(matches.get_one::<String>("new_admin").unwrap())?;
-            actions::vote_market::change_admin::change_admin(&client, &anchor_client, &payer, config, new_admin)?;
+            actions::vote_market::change_admin::change_admin(
+                &client,
+                &anchor_client,
+                &payer,
+                config,
+                new_admin,
+            )?;
         }
         Some(("change-script-authority", matches)) => {
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
-            let new_script_authority = Pubkey::from_str(matches.get_one::<String>("new_script_authority").unwrap())?;
-            actions::vote_market::change_script_authority::change_script_authority(&client, &anchor_client, &payer, config, new_script_authority)?;
+            let new_script_authority =
+                Pubkey::from_str(matches.get_one::<String>("new_script_authority").unwrap())?;
+            actions::vote_market::change_script_authority::change_script_authority(
+                &client,
+                &anchor_client,
+                &payer,
+                config,
+                new_script_authority,
+            )?;
         }
         _ => {
             println!("No subcommand");

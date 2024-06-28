@@ -31,7 +31,7 @@ pub(crate) fn create_epoch_gauge(client: &RpcClient, payer: &Keypair, gauge: Pub
 
     let mut ixs = vec![create_epoch_gauge_ix];
     println!("Creating epoch gauge");
-    let result = retry_logic(client, payer, &mut ixs, None);
+    let result = retry_logic(client, payer, &mut ixs);
     match result {
         Ok(sig) => {
             log::info!(

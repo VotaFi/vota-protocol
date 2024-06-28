@@ -1,6 +1,6 @@
 use crate::accounts::resolve::{get_delegate, get_vote_buy, resolve_vote_keys};
 use crate::actions::retry_logic;
-use crate::GAUGEMEISTER;
+use crate::{ADMIN, GAUGEMEISTER};
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -43,7 +43,7 @@ pub fn claim(
     }
     let vote_buy = get_vote_buy(&config, &gauge, epoch);
     let token_vault = get_associated_token_address(&vote_buy, &mint);
-    let treasury = get_associated_token_address(&payer.pubkey(), &mint);
+    let treasury = get_associated_token_address(&ADMIN, &mint);
     let program = anchor_client.program(vote_market::id()).unwrap();
 
     let mut ixs = program
@@ -56,7 +56,7 @@ pub fn claim(
             seller_token_account,
             token_vault,
             treasury,
-            admin: payer.pubkey(),
+            admin: ADMIN,
             mint,
             config,
             vote_buy,
@@ -80,7 +80,7 @@ pub fn claim(
         ixs.insert(0, ata_ix);
     }
 
-    let result = retry_logic::retry_logic(client, &payer, &mut ixs, Some(150_000));
+    let result = retry_logic::retry_logic(client, &payer, &mut ixs);
     //This worked once, but blockage expired will panic
     match result {
         Ok(sig) => {
