@@ -1,5 +1,5 @@
 use crate::actions::rpc_retry::retry_rpc;
-use helius::types::{Cluster, SmartTransactionConfig};
+use helius::types::{Cluster, CreateSmartTransactionConfig, SmartTransactionConfig};
 use helius::Helius;
 use retry::delay::Fixed;
 use retry::Error as RetryError;
@@ -10,6 +10,7 @@ use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use std::env;
+use solana_program::address_lookup_table::AddressLookupTableAccount;
 use crate::errors::VoteMarketManagerError::SimulationFailed;
 
 pub fn retry_logic<'a>(
@@ -71,16 +72,19 @@ pub fn retry_logic<'a>(
     let mut tries = 0;
     loop {
         let result = rt.block_on(helius.send_smart_transaction(SmartTransactionConfig {
-            instructions: ixs.clone(),
-            signers: vec![payer],
+            create_config: CreateSmartTransactionConfig {
+                instructions: ixs.clone(),
+                signers: vec![payer],
+                lookup_tables: None,
+                fee_payer: None,
+            },
             send_options: RpcSendTransactionConfig {
-                skip_preflight: false,
+                skip_preflight: true,
                 preflight_commitment: None,
                 encoding: None,
-                max_retries: None,
+                max_retries: Some(0),
                 min_context_slot: None,
             },
-            lookup_tables: None,
         }));
         match result {
             Ok(sig) => return Ok(sig),
