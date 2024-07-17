@@ -10,7 +10,6 @@ use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use std::env;
-use solana_program::address_lookup_table::AddressLookupTableAccount;
 use crate::errors::VoteMarketManagerError::SimulationFailed;
 
 pub fn retry_logic<'a>(
@@ -37,7 +36,7 @@ pub fn retry_logic<'a>(
                 Err(e) => return Err(RetryError {
                     tries: 0,
                     total_delay: std::time::Duration::from_millis(0),
-                    error: "RPC failed to get latest blockhash",
+                    error: format!("RPC failed to get latest blockhash {:?}", e),
                 }),
             }
             let sim = retry_rpc(|| {
@@ -58,17 +57,17 @@ pub fn retry_logic<'a>(
                         return Err(RetryError {
                             tries: 0,
                             total_delay: std::time::Duration::from_millis(0),
-                            error: "RPC failed to simulate transaction",
+                            error: "RPC failed to simulate transaction".to_string(),
                         });
                     }
                     Ok(sim)
                 }
                 Err(e) => {
-                    println!("Error restult simulating transaction, retry");
+                    println!("Error result simulating transaction, retry {:?}", e);
                     Err(RetryError {
                         tries: 0,
                         total_delay: std::time::Duration::from_millis(0),
-                        error: "RPC failed to simulate transaction",
+                        error: "RPC failed to simulate transaction".to_string(),
                     })
                 }
             }
@@ -97,10 +96,10 @@ pub fn retry_logic<'a>(
                 fee_payer: Some(payer),
             },
             send_options: RpcSendTransactionConfig {
-                skip_preflight: false,
+                skip_preflight: true,
                 preflight_commitment: Some(CommitmentLevel::Confirmed),
                 encoding: None,
-                max_retries: Some(5),
+                max_retries: Some(0),
                 min_context_slot: None,
             },
         }));
