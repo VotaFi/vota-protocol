@@ -146,12 +146,13 @@ pub fn vote(
                 }
             }
             //add a delay to wait for the epoch gauge voter to be created
-            std::thread::sleep(std::time::Duration::from_secs(5));
+            std::thread::sleep(std::time::Duration::from_secs(20));
         }
     } else {
         println!("Skipping setting weights");
     }
     for weight in weights {
+        prepare_vote(client, owner, weight.gauge, script_authority, epoch);
         let vote_accounts = resolve_vote_keys(&escrow, &weight.gauge, epoch);
         let epoch_gauge_vote_account = client.get_account(&vote_accounts.epoch_gauge_vote);
         // Only try to commit if it isn't already committed.

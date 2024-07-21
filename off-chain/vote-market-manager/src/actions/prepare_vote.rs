@@ -84,7 +84,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                         println!("Gauge vote created");
                         // Fails if I move on from gauge vote creation too fast.
                         // Delay 10 sec
-                        std::thread::sleep(std::time::Duration::from_secs(10));
+                        std::thread::sleep(std::time::Duration::from_secs(20));
                     }
                     Err(e) => {
                         log::error!(target: "vote",

@@ -65,7 +65,14 @@ pub(crate) fn execute_votes(
         );
         match result {
             Ok(_) => println!("Escrow owner: {:?} voted", escrow_owner),
-            Err(e) => println!("Error voting for escrow owner: {:?} {:?}", escrow_owner, e),
+            Err(e) => {
+                log::error!(target: "vote",
+                    error=e.to_string(),
+                    user=escrow_owner.to_string(),
+                    config=data.config.to_string(),
+                    epoch=data.epoch;
+                    "failed to set vote weight");
+            },
         }
     }
     Ok(())
