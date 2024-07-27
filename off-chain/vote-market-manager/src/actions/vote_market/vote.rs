@@ -4,19 +4,19 @@ use crate::accounts::resolve::{
 };
 use crate::actions::management::data::VoteInfo;
 use crate::actions::prepare_vote::prepare_vote;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::{retry_logic_helius};
 use crate::GAUGEMEISTER;
 use anchor_lang::AnchorDeserialize;
-use solana_client::rpc_client::RpcClient;
+use helius::Helius;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::Signer;
 use solana_sdk::signer::keypair::Keypair;
 
-pub fn vote(
+pub async fn vote(
     anchor_client: &anchor_client::Client<&Keypair>,
-    client: &RpcClient,
+    helius: &Helius,
     script_authority: &Keypair,
     config: Pubkey,
     owner: Pubkey,
@@ -36,10 +36,10 @@ pub fn vote(
             let vote_accounts = resolve_vote_keys(&escrow, &weight.gauge, epoch);
             println!("Epoch the votes are for: {}", epoch);
             println!("Epoch gauge voter: {:?}", vote_accounts.epoch_gauge_voter);
-            prepare_vote(client, owner, weight.gauge, script_authority, epoch);
+            prepare_vote(helius, owner, weight.gauge, script_authority, epoch).await;
 
             //check if weight needs to change
-            let vote_account = client.get_account(&vote_accounts.gauge_vote)?;
+            let vote_account = helius.rpc_client.solana_client.get_account(&vote_accounts.gauge_vote)?;
             let vote_data =
                 gauge_state::GaugeVote::deserialize(&mut vote_account.data[..].as_ref())?;
 
@@ -67,7 +67,7 @@ pub fn vote(
                     gauge_program: gauge_state::id(),
                 })
                 .instructions()?;
-            let vote_result = retry_logic(client, script_authority, &mut vote_ixs);
+            let vote_result = retry_logic_helius(helius, script_authority, &mut vote_ixs).await;
             match vote_result {
                 Ok(sig) => {
                     log::info!(target: "vote",
@@ -98,7 +98,7 @@ pub fn vote(
         // Create epoch gauge voter when all votes are complete
         let gauge_voter = get_gauge_voter(&escrow);
         let epoch_gauge_voter = get_epoch_gauge_voter(&gauge_voter, epoch);
-        let epoch_gauge_voter_account = client.get_account(&epoch_gauge_voter);
+        let epoch_gauge_voter_account = helius.rpc_client.solana_client.get_account(&epoch_gauge_voter);
         if epoch_gauge_voter_account.is_ok() {
             println!("Epoch gauge voter already exists");
         } else {
@@ -120,7 +120,7 @@ pub fn vote(
                 data,
             };
             let mut ixs = vec![create_epoch_gauge_voter_ix];
-            let result = retry_logic(client, script_authority, &mut ixs);
+            let result = retry_logic_helius(helius, script_authority, &mut ixs).await;
             match result {
                 Ok(sig) => {
                     log::info!(target: "vote",
@@ -146,15 +146,15 @@ pub fn vote(
                 }
             }
             //add a delay to wait for the epoch gauge voter to be created
-            std::thread::sleep(std::time::Duration::from_secs(20));
+            tokio::time::sleep(std::time::Duration::from_secs(20)).await;
         }
     } else {
         println!("Skipping setting weights");
     }
     for weight in weights {
-        prepare_vote(client, owner, weight.gauge, script_authority, epoch);
+        prepare_vote(helius, owner, weight.gauge, script_authority, epoch).await;
         let vote_accounts = resolve_vote_keys(&escrow, &weight.gauge, epoch);
-        let epoch_gauge_vote_account = client.get_account(&vote_accounts.epoch_gauge_vote);
+        let epoch_gauge_vote_account = helius.rpc_client.solana_client.get_account(&vote_accounts.epoch_gauge_vote);
         // Only try to commit if it isn't already committed.
         if epoch_gauge_vote_account.is_ok() {
             continue;
@@ -179,7 +179,7 @@ pub fn vote(
                 system_program: solana_program::system_program::id(),
             })
             .instructions()?;
-        let commit_result = retry_logic(client, script_authority, &mut commit_ixs);
+        let commit_result = retry_logic_helius(helius, script_authority, &mut commit_ixs).await;
         match commit_result {
             Ok(sig) => {
                 log::info!(target: "vote",
@@ -189,9 +189,9 @@ pub fn vote(
                 epoch=epoch;
                 "vote committed"
                 );
-                client.confirm_transaction_with_spinner(
+                helius.rpc_client.solana_client.confirm_transaction_with_spinner(
                     &sig,
-                    &client.get_latest_blockhash()?,
+                    &helius.rpc_client.solana_client.get_latest_blockhash()?,
                     CommitmentConfig {
                         commitment: CommitmentLevel::Confirmed,
                     },

@@ -1,18 +1,18 @@
+use helius::Helius;
 use crate::accounts::resolve::{get_escrow_address_for_owner, resolve_vote_keys, VoteCreateStep};
 use crate::actions::create_epoch_gauge::create_epoch_gauge;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::{retry_logic_helius};
 use crate::GAUGEMEISTER;
-use solana_client::rpc_client::RpcClient;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 use solana_sdk::signer::keypair::Keypair;
 
-pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Keypair, epoch: u32) {
+pub async fn prepare_vote(helius: &Helius, owner: Pubkey, gauge: Pubkey, payer: &Keypair, epoch: u32) {
     let escrow_address = get_escrow_address_for_owner(&owner);
     println!("Prepare vote for escrow: {:?}", escrow_address);
     let vote_keys = resolve_vote_keys(&escrow_address, &gauge, epoch);
-    let steps = vote_keys.get_missing_prepare_vote_accounts(client);
+    let steps = vote_keys.get_missing_prepare_vote_accounts(helius);
     for step in steps {
         match step {
             VoteCreateStep::GaugeVoter(key) => {
@@ -33,7 +33,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                     data,
                 };
                 let mut ixs = vec![create_gauge_voter_ix];
-                let result = retry_logic(client, payer, &mut ixs);
+                let result = retry_logic_helius(helius, payer, &mut ixs).await;
                 match result {
                     Ok(sig) => {
                         log::info!(target: "vote",
@@ -72,7 +72,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                     data,
                 };
                 let mut ixs = vec![create_gauge_vote_ix];
-                let result = retry_logic(client, payer, &mut ixs);
+                let result = retry_logic_helius(helius, payer, &mut ixs).await;
                 match result {
                     Ok(sig) => {
                         log::info!(target: "vote",
@@ -84,7 +84,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                         println!("Gauge vote created");
                         // Fails if I move on from gauge vote creation too fast.
                         // Delay 10 sec
-                        std::thread::sleep(std::time::Duration::from_secs(20));
+                        tokio::time::sleep(std::time::Duration::from_secs(20)).await;
                     }
                     Err(e) => {
                         log::error!(target: "vote",
@@ -97,7 +97,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                 }
             }
             VoteCreateStep::EpochGauge(_key) => {
-                create_epoch_gauge(client, payer, gauge, epoch);
+                create_epoch_gauge(helius, payer, gauge, epoch).await;
             }
             VoteCreateStep::EpochGaugeVoter(_key) => {}
         }

@@ -1,5 +1,5 @@
 use crate::errors::VoteMarketManagerError;
-use reqwest::blocking::Client;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use solana_program::pubkey::Pubkey;
 use std::collections::HashMap;
@@ -59,7 +59,7 @@ impl From<KnownTokens> for String {
     }
 }
 
-pub fn fetch_token_prices(
+pub async fn fetch_token_prices(
     token_prices: &mut HashMap<KnownTokens, f64>,
     tokens: Vec<KnownTokens>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
@@ -70,8 +70,8 @@ pub fn fetch_token_prices(
         mints.join("%2C")
     );
     let client = Client::new();
-    let response = client.get(api_url).send()?;
-    let json_response: serde_json::Value = response.json()?;
+    let response = client.get(api_url).send().await?;
+    let json_response: serde_json::Value = response.json().await?;
     println!("response {:?}", json_response);
     for mint_address in mints {
         let price = json_response.get(mint_address.clone());

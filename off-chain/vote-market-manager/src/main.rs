@@ -33,11 +33,17 @@ const ADMIN: Pubkey = pubkey!("AmbWk325Nr67A5wpoHnxh967Zf4C5fQP9KHE3eeJQYWU");
 const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
+    if let Err(e) = run().await {
+        log::error!("Error: {:?}", e);
+    }
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let api_key: &str = &*env::var("HELIUS_KEY").unwrap();
     let cluster: Cluster = Cluster::MainnetBeta;
-    let helius: Helius = Helius::new(api_key, cluster).unwrap();
+    let helius: Helius = Helius::new_with_async_solana(api_key, cluster).unwrap();
     let priority_fee = get_priority_fee(&helius).await?;
     println!("priority_fee: {:?}", priority_fee);
     Builder::with_level("info")
@@ -631,13 +637,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let owner = Pubkey::from_str(matches.get_one::<String>("owner").unwrap())?;
             let gauge = Pubkey::from_str(matches.get_one::<String>("gauge").unwrap())?;
             let epoch = matches.get_one::<u32>("epoch").unwrap();
-            actions::prepare_vote::prepare_vote(&client, owner, gauge, &payer, *epoch);
+            actions::prepare_vote::prepare_vote(&helius, owner, gauge, &payer, *epoch).await;
         }
         Some(("create-epoch-gauge", matches)) => {
             println!("create-epoch-gauge");
             let gauge = Pubkey::from_str(matches.get_one::<String>("gauge").unwrap())?;
             let epoch = matches.get_one::<u32>("epoch").unwrap();
-            actions::create_epoch_gauge::create_epoch_gauge(&client, &payer, gauge, *epoch);
+            actions::create_epoch_gauge::create_epoch_gauge(&helius, &payer, gauge, *epoch).await;
         }
         Some(("vote-test", matches)) => {
             println!("vote-test");
@@ -651,14 +657,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }];
             actions::vote_market::vote::vote(
                 &anchor_client,
-                &client,
+                &helius,
                 &payer,
                 config,
                 owner,
                 *epoch,
                 weights,
                 false,
-            )?;
+            ).await?;
         }
         Some(("check-votes", matches)) => {
             println!("check-votes");
@@ -671,11 +677,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let owner = Pubkey::from_str(matches.get_one::<String>("owner").unwrap())?;
             actions::vote_market::clear_votes::clear_votes(
                 &anchor_client,
-                &client,
+                &helius,
                 &payer,
                 config,
                 owner,
-            )?;
+            ).await?;
         }
         Some(("setup", matches)) => {
             println!("setup");
@@ -782,7 +788,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("calculate-inputs", matches)) => {
             let epoch = matches.get_one::<u32>("epoch").unwrap();
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
-            actions::management::calculate_inputs::calculate_inputs(&client, &config, *epoch)?;
+            actions::management::calculate_inputs::calculate_inputs(&client, &config, *epoch).await?;
         }
         Some(("calculate-weights", matches)) => {
             let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
@@ -834,12 +840,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let vote_weights_string = std::fs::read_to_string(vote_weights_file)?;
             let vote_infos: Vec<VoteInfo> = serde_json::from_str(&vote_weights_string)?;
             actions::management::execute_votes::execute_votes(
-                &client,
+                &helius,
                 &anchor_client,
                 &payer,
                 data,
                 vote_infos,
-            )?;
+            ).await?;
         }
         Some(("execute-claim", matches)) => {
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;

@@ -1,16 +1,16 @@
 use crate::accounts::resolve::{get_delegate, get_gauge_vote, get_gauge_voter};
 use crate::actions::management::utils;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::{retry_logic_helius};
 use crate::{GAUGEMEISTER, LOCKER};
 use anchor_client::Client;
 use anchor_lang::AnchorDeserialize;
-use solana_client::rpc_client::RpcClient;
+use helius::Helius;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
-pub(crate) fn clear_votes(
+pub(crate) async fn clear_votes(
     anchor_client: &Client<&Keypair>,
-    client: &RpcClient,
+    helius: &Helius,
     script_authority: &Keypair,
     config: Pubkey,
     owner: Pubkey,
@@ -32,7 +32,7 @@ pub(crate) fn clear_votes(
         .iter()
         .map(|g| get_gauge_vote(&get_gauge_voter(&escrow), g))
         .collect::<Vec<Pubkey>>();
-    let gauge_vote_accounts = client.get_multiple_accounts(&gauge_votes)?;
+    let gauge_vote_accounts = helius.async_connection()?.get_multiple_accounts(&gauge_votes).await?;
 
     for (i, gauge) in gauges.iter().enumerate() {
         // Can only clear initialized gauge_votes
@@ -65,7 +65,7 @@ pub(crate) fn clear_votes(
             .instructions()
             .unwrap();
         println!("Clearing votes");
-        let result = retry_logic(client, script_authority, &mut vote_ixs);
+        let result = retry_logic_helius(helius, script_authority, &mut vote_ixs).await;
         match result {
             Ok(sig) => {
                 log::info!(target: "vote",
@@ -85,6 +85,6 @@ pub(crate) fn clear_votes(
             }
         }
     }
-    println!("cleared votes");
+    println!("cleared votes!");
     Ok(())
 }

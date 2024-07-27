@@ -22,7 +22,6 @@ use std::fs;
 use vote_market::state::VoteBuy;
 
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use postgres::Client;
 use postgres_openssl::MakeTlsConnector;
 
 /// Creates a json file containing all the data needed to calculate algorithmic
@@ -51,7 +50,7 @@ use postgres_openssl::MakeTlsConnector;
 ///   "escrows": "[BEwbnYCmqQ8pi59s7E6uK26hMhy1GJivqsRaeWU4PHUW,DyBaLYzwbbWnPBAa23LyrAw2sHxYS2C2DDmq711yg5on,9uVg1hWhmn7qPaMT8pAeNV1yFFSwmFPTNyJ9xT5SaQgf]"
 /// }
 /// ```
-pub(crate) fn calculate_inputs(
+pub(crate) async fn calculate_inputs(
     client: &RpcClient,
     config: &Pubkey,
     epoch: u32,
@@ -75,21 +74,30 @@ pub(crate) fn calculate_inputs(
     // Get USD values of relevant tokens
     let mut prices: HashMap<KnownTokens, f64> = HashMap::new();
     println!("about to fetch here");
-    fetch_token_prices(&mut prices, tokens)?;
+    fetch_token_prices(&mut prices, tokens).await?;
     println!("finished to fetch here");
     println!("prices: {:?}", prices);
 
     // Create Ssl postgres connector without verification
-    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    let mut builder = SslConnector::builder(SslMethod::tls())?;
+    println!("got here");
     builder.set_verify(SslVerifyMode::NONE);
+    println!("got here 2");
     let connector = MakeTlsConnector::new(builder.build());
+    println!("got here 3");
 
+    let a = &env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    println!("got here 4 {:?}", a);
     // Connect to the PostgreSQL database
-    let mut postgres_client = Client::connect(
+    let (postgres_client, connection) = tokio_postgres::connect(
         &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
         connector,
-    )
-    .unwrap();
+    ).await?;
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
 
     // Insert data into the `prices` table
     for (token, price) in &prices {
@@ -97,7 +105,7 @@ pub(crate) fn calculate_inputs(
         postgres_client.execute(
             "INSERT INTO prices (epoch, price, token) VALUES ($1, $2, $3)",
             &[&epoch, price, &token.to_string()],
-        )?;
+        ).await?;
     }
 
     // Find direct votes
@@ -232,18 +240,6 @@ pub(crate) fn calculate_inputs(
         epoch_stats_json,
     )?;
 
-    // Create Ssl postgres connector without verification
-    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
-    builder.set_verify(SslVerifyMode::NONE);
-    let connector = MakeTlsConnector::new(builder.build());
-
-    // Connect to the PostgreSQL database
-    let mut postgres_client = Client::connect(
-        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-        connector,
-    )
-    .unwrap();
-
     // Insert into the epoch_vote_info table
     let epoch = epoch as i32;
     let total_votes = total_votes as i64;
@@ -260,7 +256,7 @@ pub(crate) fn calculate_inputs(
             &sbr_per_epoch,
             &usd_per_vote
         ]
-    )?;
+    ).await?;
 
     Ok(())
 }

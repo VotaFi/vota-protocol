@@ -5,11 +5,11 @@ use crate::accounts::resolve::{
 use crate::actions::vote_market::clear_votes::clear_votes;
 use crate::actions::vote_market::vote::vote;
 use anchor_client::Client;
-use solana_client::rpc_client::RpcClient;
+use helius::Helius;
 use solana_sdk::signature::Keypair;
 
-pub(crate) fn execute_votes(
-    client: &RpcClient,
+pub(crate) async fn execute_votes(
+    helius: &Helius,
     anchor_client: &Client<&Keypair>,
     script_authority: &Keypair,
     data: EpochData,
@@ -29,7 +29,7 @@ pub(crate) fn execute_votes(
         let gauge_voter = get_gauge_voter(&escrow);
         let epoch_gauge_voter = get_epoch_gauge_voter(&gauge_voter, data.epoch);
         println!("epoch_guage_voter {:?}", epoch_gauge_voter);
-        let epoch_gauge_voter_account = client.get_account(&epoch_gauge_voter);
+        let epoch_gauge_voter_account = helius.rpc_client.solana_client.get_account(&epoch_gauge_voter);
         // TODO: Actually need to check that all votes are committed.
         let mut skip_weights = false;
         println!("skip_weights: {:?}", skip_weights);
@@ -42,27 +42,35 @@ pub(crate) fn execute_votes(
         println!("skip_weights: {:?}", skip_weights);
         if !skip_weights {
             println!("going to clear votes");
-            clear_votes(
+            let cv = clear_votes(
                 anchor_client,
-                client,
+                helius,
                 script_authority,
                 data.config,
                 *escrow_owner,
-            )?;
+            ).await;
             //delay for 5 seconds to allow for votes to clear
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            println!("does it crash after this?");
+            match cv {
+                Ok(_) => println!("Votes cleared"),
+                Err(e) => {
+                    println!("Stop");
+                },
+            }
+            //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+            println!("nope");
         }
 
         let result = vote(
             anchor_client,
-            client,
+            helius,
             script_authority,
             data.config,
             *escrow_owner,
             data.epoch,
             vote_weights.clone(),
             skip_weights,
-        );
+        ).await;
         match result {
             Ok(_) => println!("Escrow owner: {:?} voted", escrow_owner),
             Err(e) => {

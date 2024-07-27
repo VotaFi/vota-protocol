@@ -3023,20 +3023,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 
 [[package]]
-name = "postgres"
-version = "0.19.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7915b33ed60abc46040cbcaa25ffa1c7ec240668e0477c4f3070786f5916d451"
-dependencies = [
- "bytes",
- "fallible-iterator",
- "futures-util",
- "log",
- "tokio",
- "tokio-postgres",
-]
-
-[[package]]
 name = "postgres-openssl"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5851,7 +5837,6 @@ dependencies = [
  "locked-voter-state",
  "log",
  "openssl",
- "postgres",
  "postgres-openssl",
  "quarry-state",
  "reqwest 0.11.27",
@@ -5867,6 +5852,7 @@ dependencies = [
  "structured-logger",
  "termcolor",
  "tokio",
+ "tokio-postgres",
  "vote-market",
 ]
 

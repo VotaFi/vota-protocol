@@ -1,6 +1,6 @@
+use helius::Helius;
 use crate::actions::rpc_retry::retry_rpc;
 use crate::{GAUGEMEISTER, LOCKER};
-use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 
 pub fn get_escrow_address_for_owner(owner: &Pubkey) -> Pubkey {
@@ -37,8 +37,8 @@ impl VoteKeys {
             self.epoch_gauge,
         ]
     }
-    pub fn get_missing_prepare_vote_accounts(&self, client: &RpcClient) -> Vec<VoteCreateStep> {
-        let accounts = retry_rpc(|| client.get_multiple_accounts(&self.get_all_keys())).unwrap();
+    pub fn get_missing_prepare_vote_accounts(&self, helius: &Helius) -> Vec<VoteCreateStep> {
+        let accounts = retry_rpc(|| helius.rpc_client.solana_client.get_multiple_accounts(&self.get_all_keys())).unwrap();
         let mut steps: Vec<VoteCreateStep> = Vec::new();
         for (index, account) in accounts.iter().enumerate() {
             if account.is_none() {
