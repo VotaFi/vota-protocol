@@ -1,30 +1,22 @@
 use crate::errors::VoteMarketManagerError;
-use reqwest::blocking::Client;
-use serde_json::json;
-use std::env;
+use helius::Helius;
+use helius::types::{GetPriorityFeeEstimateOptions, GetPriorityFeeEstimateRequest, PriorityLevel};
 
-pub fn get_priority_fee() -> Result<f64, Box<dyn std::error::Error>> {
-    let rpc_url = env::var("RPC_URL").unwrap().to_string();
-    if !rpc_url.contains("helius") {
-        return Ok(0.0);
+pub async fn get_priority_fee(helius: &Helius) -> Result<f64, Box<dyn std::error::Error>> {
+    let response = helius.rpc_client.get_priority_fee_estimate(GetPriorityFeeEstimateRequest {
+        transaction: None,
+        account_keys: Some(vec![gauge_state::id().to_string(),"JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4".to_string()]),
+        options: Some(GetPriorityFeeEstimateOptions {
+            priority_level: Some(PriorityLevel::Medium),
+            include_all_priority_fee_levels: None,
+            transaction_encoding: None,
+            lookback_slots: None,
+            recommended: None,
+            include_vote: None,
+        })
+    }).await?;
+    match response.priority_fee_estimate {
+        Some(priority_fee_estimate) => Ok(priority_fee_estimate),
+        None => Err(VoteMarketManagerError::PriorityFeeNotInResult.into()),
     }
-    let client = Client::new();
-    let response = client
-        .post(rpc_url)
-        .json(&json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getPriorityFeeEstimate",
-            "params": [ {
-                "accountKeys": [gauge_state::id().to_string(),"JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"],
-                "options": {
-                    "priority_level": "MEDIUM",
-                }
-            } ]
-        }))
-        .send()?;
-    let json_response: serde_json::Value = response.json()?;
-    json_response["result"]["priorityFeeEstimate"]
-        .as_f64()
-        .ok_or(VoteMarketManagerError::PriorityFeeNotInResult.into())
 }

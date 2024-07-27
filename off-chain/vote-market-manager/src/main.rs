@@ -6,6 +6,8 @@ use chrono::Utc;
 use clap::value_parser;
 use clap::ArgAction::SetTrue;
 use dotenv::dotenv;
+use helius::Helius;
+use helius::types::Cluster;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey;
 use solana_sdk::pubkey::Pubkey;
@@ -30,9 +32,13 @@ const GAUGEMEISTER: Pubkey = pubkey!("28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348t
 const ADMIN: Pubkey = pubkey!("AmbWk325Nr67A5wpoHnxh967Zf4C5fQP9KHE3eeJQYWU");
 const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    let priority_fee = get_priority_fee();
+    let api_key: &str = &*env::var("HELIUS_KEY").unwrap();
+    let cluster: Cluster = Cluster::MainnetBeta;
+    let helius: Helius = Helius::new(api_key, cluster).unwrap();
+    let priority_fee = get_priority_fee(&helius).await?;
     println!("priority_fee: {:?}", priority_fee);
     Builder::with_level("info")
         .with_target_writer(
