@@ -28,8 +28,6 @@ pub fn retry_logic<'a>(
     let helius: Helius = Helius::new(api_key, cluster).unwrap();
     if debug {
         let mut sim_tx = Transaction::new_with_payer(&ixs, Some(&payer.pubkey()));
-
-
         let sim_strategy = Fixed::from_millis(1000).take(5);
         let sim_result = retry::retry(sim_strategy, || {
             let latest_blockhash = retry_rpc(|| {
@@ -92,7 +90,7 @@ pub fn retry_logic<'a>(
     }
     let mut tries = 0;
     loop {
-        let result = rt.block_on(async { timeout(Duration::from_secs(10),
+        let timeout_result = rt.block_on(async { timeout(Duration::from_secs(15),
              helius.send_smart_transaction(SmartTransactionConfig {
             create_config: CreateSmartTransactionConfig {
                 instructions: ixs.clone(),
@@ -108,8 +106,20 @@ pub fn retry_logic<'a>(
                 min_context_slot: None,
             },
         })).await
-        })?;
-        match result {
+        });
+        let result = match timeout_result {
+            Ok(result) => Some(result),
+            Err(e) => {
+                println!("time elapsed. Moving on.");
+                None
+            }
+        };
+        if result.is_none() {
+            tries += 1;
+            println!("Retrying transaction {}", tries);
+            continue;
+        }
+        match result.unwrap() {
             Ok(sig) => return Ok(sig),
             Err(e) => {
                 if tries == 10 {
