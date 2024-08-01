@@ -10,6 +10,10 @@ use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use std::env;
+use solana_program::address_lookup_table::AddressLookupTableAccount;
+use solana_sdk::pubkey;
+use tokio::time::{timeout, Duration};
+use crate::actions::lookup_table::get_lookup_tables;
 use crate::errors::VoteMarketManagerError::SimulationFailed;
 
 pub fn retry_logic<'a>(
@@ -24,8 +28,6 @@ pub fn retry_logic<'a>(
     let helius: Helius = Helius::new(api_key, cluster).unwrap();
     if debug {
         let mut sim_tx = Transaction::new_with_payer(&ixs, Some(&payer.pubkey()));
-
-
         let sim_strategy = Fixed::from_millis(1000).take(5);
         let sim_result = retry::retry(sim_strategy, || {
             let latest_blockhash = retry_rpc(|| {
@@ -88,11 +90,12 @@ pub fn retry_logic<'a>(
     }
     let mut tries = 0;
     loop {
-        let result = rt.block_on(helius.send_smart_transaction(SmartTransactionConfig {
+        let timeout_result = rt.block_on(async { timeout(Duration::from_secs(15),
+             helius.send_smart_transaction(SmartTransactionConfig {
             create_config: CreateSmartTransactionConfig {
                 instructions: ixs.clone(),
                 signers: vec![payer],
-                lookup_tables: None,
+                lookup_tables: Some(get_lookup_tables()),
                 fee_payer: Some(payer),
             },
             send_options: RpcSendTransactionConfig {
@@ -102,8 +105,21 @@ pub fn retry_logic<'a>(
                 max_retries: Some(0),
                 min_context_slot: None,
             },
-        }));
-        match result {
+        })).await
+        });
+        let result = match timeout_result {
+            Ok(result) => Some(result),
+            Err(e) => {
+                println!("time elapsed. Moving on.");
+                None
+            }
+        };
+        if result.is_none() {
+            tries += 1;
+            println!("Retrying transaction {}", tries);
+            continue;
+        }
+        match result.unwrap() {
             Ok(sig) => return Ok(sig),
             Err(e) => {
                 if tries == 10 {

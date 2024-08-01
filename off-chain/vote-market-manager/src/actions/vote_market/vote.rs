@@ -8,7 +8,7 @@ use crate::actions::retry_logic::retry_logic;
 use crate::GAUGEMEISTER;
 use anchor_lang::AnchorDeserialize;
 use solana_client::rpc_client::RpcClient;
-use solana_program::instruction::AccountMeta;
+use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::Signer;
@@ -31,6 +31,7 @@ pub fn vote(
 
     if !skip_weights {
         // Set weights
+        let mut vote_ixs: Vec<Instruction> = Vec::new();
         for weight in weights.clone() {
             // Set weight
             let vote_accounts = resolve_vote_keys(&escrow, &weight.gauge, epoch);
@@ -49,7 +50,7 @@ pub fn vote(
             }
 
             println!("Prepare voter completed");
-            let mut vote_ixs = program
+            vote_ixs.extend(program
                 .request()
                 .signer(script_authority)
                 .args(vote_market::instruction::Vote {
@@ -66,31 +67,32 @@ pub fn vote(
                     vote_delegate,
                     gauge_program: gauge_state::id(),
                 })
-                .instructions()?;
-            let vote_result = retry_logic(client, script_authority, &mut vote_ixs);
-            match vote_result {
-                Ok(sig) => {
-                    log::info!(target: "vote",
+                .instructions()?);
+        }
+
+        let vote_result = retry_logic(client, script_authority, &mut vote_ixs);
+        match vote_result {
+            Ok(sig) => {
+                log::info!(target: "vote",
                     sig=sig.to_string(),
                     user=owner.to_string(),
                     config=config.to_string(),
                     epoch=epoch;
                     "set vote weight"
                     );
-                    println!("Vote succsesful for {:?}: {:?}", escrow, sig);
-                }
-                Err(e) => {
-                    log::error!(target: "vote",
+                println!("Vote succsesful for {:?}: {:?}", escrow, sig);
+            }
+            Err(e) => {
+                log::error!(target: "vote",
                     error=e.to_string(),
                     user=owner.to_string(),
                     config=config.to_string(),
                     epoch=epoch;
                     "failed to set vote weight");
-                    println!("Error sending vote for {:?}: {:?}", escrow, e);
-                    return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
+                println!("Error sending vote for {:?}: {:?}", escrow, e);
+                return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
                         e.to_string()
                     )));
-                }
             }
         }
 
@@ -151,6 +153,7 @@ pub fn vote(
     } else {
         println!("Skipping setting weights");
     }
+    let mut commit_ixs: Vec<Instruction> = Vec::new();
     for weight in weights {
         prepare_vote(client, owner, weight.gauge, script_authority, epoch);
         let vote_accounts = resolve_vote_keys(&escrow, &weight.gauge, epoch);
@@ -160,7 +163,7 @@ pub fn vote(
             continue;
         }
         // Commit vote
-        let mut commit_ixs = program
+        commit_ixs.extend(program
             .request()
             .signer(script_authority)
             .args(vote_market::instruction::CommitVote { epoch })
@@ -178,38 +181,43 @@ pub fn vote(
                 gauge_program: gauge_state::id(),
                 system_program: solana_program::system_program::id(),
             })
-            .instructions()?;
-        let commit_result = retry_logic(client, script_authority, &mut commit_ixs);
-        match commit_result {
-            Ok(sig) => {
-                log::info!(target: "vote",
+            .instructions()?);
+    }
+    if commit_ixs.is_empty() {
+        println!("Votes already committed");
+        return Ok(());
+    }
+
+    let commit_result = retry_logic(client, script_authority, &mut commit_ixs);
+    match commit_result {
+        Ok(sig) => {
+            log::info!(target: "vote",
                 sig=sig.to_string(),
                 user=owner.to_string(),
                 config=config.to_string(),
                 epoch=epoch;
                 "vote committed"
                 );
-                client.confirm_transaction_with_spinner(
-                    &sig,
-                    &client.get_latest_blockhash()?,
-                    CommitmentConfig {
-                        commitment: CommitmentLevel::Confirmed,
-                    },
-                )?;
-                println!("Vote committed for {:?}: {:?}", escrow, sig);
-            }
-            Err(e) => {
-                log::error!(target: "vote",
+            client.confirm_transaction_with_spinner(
+                &sig,
+                &client.get_latest_blockhash()?,
+                CommitmentConfig {
+                    commitment: CommitmentLevel::Confirmed,
+                },
+            )?;
+            println!("Vote committed for {:?}: {:?}", escrow, sig);
+        }
+        Err(e) => {
+            log::error!(target: "vote",
                 error=e.to_string(),
                 user=owner.to_string(),
                 config=config.to_string(),
                 epoch=epoch;
                 "failed to commit vote");
-                println!("Error committing vote for {:?}: {:?}", escrow, e);
-                return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
+            println!("Error committing vote for {:?}: {:?}", escrow, e);
+            return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
                     e.to_string()
                 )));
-            }
         }
     }
 

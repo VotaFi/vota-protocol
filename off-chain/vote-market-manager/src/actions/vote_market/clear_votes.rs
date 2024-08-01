@@ -5,6 +5,7 @@ use crate::{GAUGEMEISTER, LOCKER};
 use anchor_client::Client;
 use anchor_lang::AnchorDeserialize;
 use solana_client::rpc_client::RpcClient;
+use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -34,6 +35,7 @@ pub(crate) fn clear_votes(
         .collect::<Vec<Pubkey>>();
     let gauge_vote_accounts = client.get_multiple_accounts(&gauge_votes)?;
 
+    let mut vote_ixs: Vec<Instruction> = Vec::new();
     for (i, gauge) in gauges.iter().enumerate() {
         // Can only clear initialized gauge_votes
         if gauge_vote_accounts[i].is_none() {
@@ -47,7 +49,7 @@ pub(crate) fn clear_votes(
             continue;
         }
         let gauge_vote = gauge_votes[i];
-        let mut vote_ixs = program
+        vote_ixs.extend(program
             .request()
             .signer(script_authority)
             .args(vote_market::instruction::Vote { weight: 0 })
@@ -62,27 +64,27 @@ pub(crate) fn clear_votes(
                 vote_delegate,
                 gauge_program: gauge_state::id(),
             })
-            .instructions()
-            .unwrap();
+            .instructions()?);
         println!("Clearing votes");
-        let result = retry_logic(client, script_authority, &mut vote_ixs);
-        match result {
-            Ok(sig) => {
-                log::info!(target: "vote",
+    }
+
+    let result = retry_logic(client, script_authority, &mut vote_ixs);
+    match result {
+        Ok(sig) => {
+            log::info!(target: "vote",
                 sig=sig.to_string(),
                 user=owner.to_string(),
                 config=config.to_string();
                 "cleared votes");
-                println!("Cleared votes for {:?}: {:?}", escrow, sig);
-            }
-            Err(e) => {
-                log::error!(target: "vote",
+            println!("Cleared votes for {:?}: {:?}", escrow, sig);
+        }
+        Err(e) => {
+            log::error!(target: "vote",
                 error=e.to_string(),
                 user=owner.to_string(),
                 config=config.to_string();
                 "failed to clear votes");
-                println!("Error clearing votes for {:?}: {:?}", escrow, e);
-            }
+            println!("Error clearing votes for {:?}: {:?}", escrow, e);
         }
     }
     println!("cleared votes");
