@@ -1,6 +1,12 @@
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
+use std::error::Error;
+use std::path::Path;
+use std::fs;
+use structured_logger::Builder;
+use structured_logger::json::new_writer;
+use chrono::Utc;
 
 pub fn short_address(address: &Pubkey) -> String {
     let mut short = String::new();
@@ -20,4 +26,25 @@ pub fn get_multiple_accounts(client: &RpcClient, keys: Vec<Pubkey>) -> Vec<Optio
         accounts.extend(accounts_chunk);
     }
     accounts
+}
+
+pub fn create_logger() -> Result<(), Box<dyn Error>> {
+//Add a pid so parallel processes won't grab the same log file
+    let pid = std::process::id();
+    let log_dir = "./logs";
+    if !Path::new(log_dir).exists() {
+        fs::create_dir_all(log_dir)?;
+    }
+    Builder::with_level("info")
+        .with_target_writer(
+            "*",
+            new_writer(fs::File::create(format!(
+                "{}/vote_market_{}_{}.log",
+                log_dir,
+                Utc::now().format("%Y-%m-%d-%H_%M"),
+                pid
+            ))?),
+        )
+        .init();
+    Ok(())
 }

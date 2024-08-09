@@ -1,6 +1,5 @@
 use std::str::FromStr;
 use std::{env, fs};
-
 use anchor_lang::AnchorDeserialize;
 use chrono::Utc;
 use clap::value_parser;
@@ -10,9 +9,6 @@ use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
-use structured_logger::json::new_writer;
-use structured_logger::Builder;
-
 use crate::accounts::resolve::{get_delegate, get_escrow_address_for_owner};
 use crate::actions::management::data::VoteInfo;
 use crate::actions::queries::escrows;
@@ -31,15 +27,7 @@ const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    Builder::with_level("info")
-        .with_target_writer(
-            "*",
-            new_writer(fs::File::create(format!(
-                "./vote_market_{}.log",
-                Utc::now().format("%Y-%m-%d-%H_%M")
-            ))?),
-        )
-        .init();
+    utils::create_logger()?;
     let cmd = clap::Command::new("vote-market-manager")
         .bin_name("vote-market-manager")
         .arg(
@@ -491,7 +479,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .long("escrow")
                         .short('e')
                         .value_parser(value_parser!(String))
-                        .help("A single escrow to execute votes for"),
+                        .help("Owner of a single escrow to execute votes for"),
                 ),
         )
         .subcommand(

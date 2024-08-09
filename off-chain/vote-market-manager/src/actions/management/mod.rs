@@ -7,5 +7,4 @@ pub(crate) mod execute_claim;
 pub(crate) mod execute_votes;
 pub(crate) mod find_max_vote_buy;
 mod oracle;
-pub(crate) mod priority_fee;
 pub(crate) mod utils;

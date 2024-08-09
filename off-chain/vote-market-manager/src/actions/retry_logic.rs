@@ -10,10 +10,10 @@ use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use std::env;
-use solana_program::address_lookup_table::AddressLookupTableAccount;
-use solana_sdk::pubkey;
-use tokio::time::{timeout, Duration};
+use tokio::select;
+use tokio::time::{Duration, sleep};
 use crate::actions::lookup_table::get_lookup_tables;
+use crate::errors::VoteMarketManagerError;
 use crate::errors::VoteMarketManagerError::SimulationFailed;
 
 pub fn retry_logic<'a>(
@@ -90,8 +90,7 @@ pub fn retry_logic<'a>(
     }
     let mut tries = 0;
     loop {
-        let timeout_result = rt.block_on(async { timeout(Duration::from_secs(15),
-             helius.send_smart_transaction(SmartTransactionConfig {
+        let helius_call = helius.send_smart_transaction(SmartTransactionConfig {
             create_config: CreateSmartTransactionConfig {
                 instructions: ixs.clone(),
                 signers: vec![payer],
@@ -105,28 +104,30 @@ pub fn retry_logic<'a>(
                 max_retries: Some(0),
                 min_context_slot: None,
             },
-        })).await
         });
-        let result = match timeout_result {
+        let result = rt.block_on(async {
+            select! {
+            res = helius_call => {
+                res.map_err(|e| VoteMarketManagerError::SendTransactionError { message: e.to_string() })
+            },
+            _ = sleep(Duration::from_secs(15)) => {
+                println!("time elapsed. Moving on.");
+                Err(VoteMarketManagerError::SendTransactionError { message: "Timeout".to_string()})
+            },
+            }
+        });
+        let result = match result {
             Ok(result) => Some(result),
             Err(e) => {
-                println!("time elapsed. Moving on.");
+                println!("time elapsed or RPC error. Moving on. {:?}", e.to_string());
                 None
             }
         };
-        if result.is_none() {
-            tries += 1;
-            println!("Retrying transaction {}", tries);
-            continue;
+        if let Some(result) = result {
+            return Ok(result);
         }
-        match result.unwrap() {
-            Ok(sig) => return Ok(sig),
-            Err(e) => {
-                if tries == 10 {
-                    println!("Error sending transaction: {:?}", e);
-                    return Err(Box::new(e));
-                }
-            }
+        if tries > 10 {
+            return Err(Box::new(VoteMarketManagerError::AddressNotFound));
         }
         tries += 1;
         println!("Retrying transaction {}", tries);
