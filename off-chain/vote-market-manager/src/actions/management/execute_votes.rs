@@ -6,6 +6,7 @@ use crate::actions::vote_market::clear_votes::clear_votes;
 use crate::actions::vote_market::vote::vote;
 use anchor_client::Client;
 use solana_client::rpc_client::RpcClient;
+use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 
 pub(crate) fn execute_votes(
@@ -14,16 +15,19 @@ pub(crate) fn execute_votes(
     script_authority: &Keypair,
     data: EpochData,
     vote_weights: Vec<VoteInfo>,
+    escrow: Option<Pubkey>
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("Executing votes");
-    println!("Data: {:?}", data);
-    println!("Vote weights: {:?}", vote_weights);
-    for (i, escrow_owner) in data.escrow_owners.iter().enumerate() {
+    let escrow_owners = match escrow {
+        Some(escrow) => vec![escrow],
+        None => data.escrow_owners.clone(),
+    };
+    for (i, escrow_owner) in escrow_owners.iter().enumerate() {
         println!(
             "Voting on behalf of escrow owner {:?}\n Escrow {} out of {}",
             escrow_owner,
-            i,
-            data.escrow_owners.len()
+            i + 1,
+            escrow_owners.len()
         );
         let escrow = get_escrow_address_for_owner(&escrow_owner);
         let gauge_voter = get_gauge_voter(&escrow);
