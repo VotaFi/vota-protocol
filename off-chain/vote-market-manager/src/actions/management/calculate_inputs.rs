@@ -71,6 +71,7 @@ pub(crate) fn calculate_inputs(
     tokens.push(KnownTokens::Meta);
     tokens.push(KnownTokens::Sbr);
     tokens.push(KnownTokens::Uxp);
+    tokens.push(KnownTokens::Usdc);
 
     // Get USD values of relevant tokens
     let mut prices: HashMap<KnownTokens, f64> = HashMap::new();
