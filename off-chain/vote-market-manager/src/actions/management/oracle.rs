@@ -14,6 +14,7 @@ pub enum KnownTokens {
     Blze,
     Sbr,
     Meta,
+    Usdc,
 }
 
 // Implement Display for KnownTokens to convert it to a String
@@ -35,6 +36,7 @@ impl From<String> for KnownTokens {
             "BLZEEuZUBVqFhj8adcCFPJvPVCiCyVmh3hkJMrU8KuJA" => KnownTokens::Blze,
             "Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1" => KnownTokens::Sbr,
             "METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr" => KnownTokens::Meta,
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" => KnownTokens::Usdc,
             _ => panic!("Unknown token"),
         }
     }
@@ -55,6 +57,7 @@ impl From<KnownTokens> for String {
             KnownTokens::Blze => "BLZEEuZUBVqFhj8adcCFPJvPVCiCyVmh3hkJMrU8KuJA".to_string(),
             KnownTokens::Sbr => "Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1".to_string(),
             KnownTokens::Meta => "METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr".to_string(),
+            KnownTokens::Usdc => "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v".to_string(),
         }
     }
 }

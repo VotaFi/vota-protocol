@@ -679,12 +679,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map(|mint| Pubkey::from_str(mint).unwrap())
                     .collect();
             }
+            println!("got here");
             actions::vote_market::setup::setup(&anchor_client, mints, &payer);
         }
         Some(("update-mints", matches)) => {
-            println!("update-mints");
+            println!("update-mints-ok");
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
+            println!("config {:?}", config);
             let mut mints = vec![Pubkey::default()];
+            println!("{:?}", mints);
             if let Some(mint_vaulues) = matches.get_many::<String>("mints") {
                 mints = mint_vaulues
                     .map(|mint| Pubkey::from_str(mint).unwrap())
