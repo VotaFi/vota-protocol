@@ -4,7 +4,7 @@ use std::io::{Write};
 use std::os::unix::fs::PermissionsExt;
 use chrono::Utc;
 use solana_program::pubkey::Pubkey;
-use crate::actions::management::data::{EpochData, VoteInfo};
+use crate::actions::management::data::{EpochData};
 
 pub(crate) fn create_parallel_sh(
     data_file: &String,

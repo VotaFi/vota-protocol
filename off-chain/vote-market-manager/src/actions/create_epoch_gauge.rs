@@ -8,7 +8,7 @@ pub(crate) fn create_epoch_gauge(client: &RpcClient, payer: &Keypair, gauge: Pub
     let (epoch_gauge, bump) = Pubkey::find_program_address(
         &[
             b"EpochGauge".as_ref(),
-            &gauge.as_ref(),
+            (gauge.as_ref()),
             &epoch.to_le_bytes(),
         ],
         &gauge_state::id(),

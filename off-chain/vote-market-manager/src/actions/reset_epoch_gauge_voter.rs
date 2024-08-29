@@ -15,9 +15,9 @@ pub(crate) fn reset_epoch_gauge_voter(
 ) {
     let escrow = get_escrow_address_for_owner(&owner);
     let gauge_voter = get_gauge_voter(&escrow);
-    println!("Resetting epoch gauge voter {}", gauge_voter.to_string());
+    println!("Resetting epoch gauge voter {}", gauge_voter);
     let epoch_gauge_voter = get_epoch_gauge_voter(&gauge_voter, epoch);
-    println!("Epoch gauge voter {}", epoch_gauge_voter.to_string());
+    println!("Epoch gauge voter {}", epoch_gauge_voter);
     let data: Vec<u8> =
         solana_program::hash::hash(b"global:reset_epoch_gauge_voter").to_bytes()[..8].to_vec();
     let create_epoch_gauge_voter_ix = solana_program::instruction::Instruction {

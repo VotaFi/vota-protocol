@@ -48,8 +48,8 @@ pub(crate) fn get_escrow_votes(
     delegate: &Pubkey,
     gauge: &Pubkey,
     epoch: u32,
-) -> () {
-    let escrows = get_delegated_escrows(client, &delegate);
+) {
+    let escrows = get_delegated_escrows(client, delegate);
     let mut epoch_gauge_votes: Vec<Pubkey> = Vec::new();
     for (key, _escrow) in escrows.clone() {
         let vote_accounts = resolve_vote_keys(&key, gauge, epoch);
@@ -59,12 +59,7 @@ pub(crate) fn get_escrow_votes(
     let epoch_gauge_vote_accounts = get_multiple_accounts(client, epoch_gauge_votes);
     let mut total_power: u64 = 0;
     for (index, account) in epoch_gauge_vote_accounts.iter().enumerate() {
-        let epoch_gauge_vote_data: Option<EpochGaugeVote> = match account {
-            Some(account) => {
-                Some(EpochGaugeVote::try_deserialize(&mut account.data.as_slice()).unwrap())
-            }
-            None => None,
-        };
+        let epoch_gauge_vote_data: Option<EpochGaugeVote> = account.as_ref().map(|account| EpochGaugeVote::try_deserialize(&mut account.data.as_slice()).unwrap());
         match epoch_gauge_vote_data {
             Some(data) => {
                 println!(

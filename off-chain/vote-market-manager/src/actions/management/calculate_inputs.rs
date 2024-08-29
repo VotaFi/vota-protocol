@@ -21,7 +21,6 @@ use std::error::Error;
 use std::fs;
 use vote_market::state::VoteBuy;
 
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::Client;
 use postgres_openssl::MakeTlsConnector;
 
@@ -53,6 +52,7 @@ use postgres_openssl::MakeTlsConnector;
 /// ```
 pub(crate) fn calculate_inputs(
     client: &RpcClient,
+    db_client: &mut Client,
     config: &Pubkey,
     epoch: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -79,22 +79,11 @@ pub(crate) fn calculate_inputs(
     println!("finished to fetch here");
     println!("prices: {:?}", prices);
 
-    // Create Ssl postgres connector without verification
-    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
-    builder.set_verify(SslVerifyMode::NONE);
-    let connector = MakeTlsConnector::new(builder.build());
-
-    // Connect to the PostgreSQL database
-    let mut postgres_client = Client::connect(
-        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-        connector,
-    )
-    .unwrap();
 
     // Insert data into the `prices` table
     for (token, price) in &prices {
         let epoch = epoch as i32;
-        postgres_client.execute(
+        db_client.execute(
             "INSERT INTO prices (epoch, price, token) VALUES ($1, $2, $3)",
             &[&epoch, price, &token.to_string()],
         )?;
@@ -130,7 +119,7 @@ pub(crate) fn calculate_inputs(
         });
     }
     for vote in vote_buys.iter() {
-        if gauges.iter().find(|x| x.gauge == vote.gauge).is_none() {
+        if !gauges.iter().any(|x| x.gauge == vote.gauge) {
             let payment = calculate_payment(client, &mut prices, vote)?;
             total_vote_buy_value += payment;
             gauges.push(GaugeInfo {
@@ -232,24 +221,12 @@ pub(crate) fn calculate_inputs(
         epoch_stats_json,
     )?;
 
-    // Create Ssl postgres connector without verification
-    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
-    builder.set_verify(SslVerifyMode::NONE);
-    let connector = MakeTlsConnector::new(builder.build());
-
-    // Connect to the PostgreSQL database
-    let mut postgres_client = Client::connect(
-        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-        connector,
-    )
-    .unwrap();
-
     // Insert into the epoch_vote_info table
     let epoch = epoch as i32;
     let total_votes = total_votes as i64;
     let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
     let total_delegated_votes = total_delegated_votes as i64;
-    postgres_client.execute(
+    db_client.execute(
         "INSERT INTO epoch_vote_info (epoch, totalVotes, directVotes, delegatedVotes, totalVoteBuyValue, sbrPerEpoch, usdPerVote) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         &[
             &epoch,

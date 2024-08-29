@@ -29,7 +29,7 @@ pub(crate) fn execute_votes(
             i + 1,
             escrow_owners.len()
         );
-        let escrow = get_escrow_address_for_owner(&escrow_owner);
+        let escrow = get_escrow_address_for_owner(escrow_owner);
         let gauge_voter = get_gauge_voter(&escrow);
         let epoch_gauge_voter = get_epoch_gauge_voter(&gauge_voter, data.epoch);
         println!("epoch_guage_voter {:?}", epoch_gauge_voter);

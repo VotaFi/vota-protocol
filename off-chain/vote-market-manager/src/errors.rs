@@ -7,6 +7,9 @@ pub enum VoteMarketManagerError {
     SimulationFailed {
         sim_info: String,
     },
+    DatabaseConnection {
+        error: String,
+    },
 }
 
 impl std::error::Error for VoteMarketManagerError {}
@@ -19,6 +22,9 @@ impl Display for VoteMarketManagerError {
             },
             VoteMarketManagerError::SimulationFailed { sim_info } => {
                 write!(f, "Simulation failed: {}", sim_info)
+            },
+            VoteMarketManagerError::DatabaseConnection { error } => {
+                write!(f, "Database connection error: {}", error)
             },
         }
     }

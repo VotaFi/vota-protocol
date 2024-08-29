@@ -10,7 +10,7 @@ use solana_client::rpc_filter::RpcFilterType::DataSize;
 use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
 use std::fs;
 
-pub fn get_gauges(client: RpcClient) -> () {
+pub fn get_gauges(client: RpcClient) {
     let accounts = client
         .get_program_accounts_with_config(
             &gauge_state::id(),
@@ -41,7 +41,7 @@ pub fn get_gauges(client: RpcClient) -> () {
     let quary_info = fs::read_to_string("quarry_info.json").unwrap();
     let quarry_info: Value = serde_json::from_str(&quary_info).unwrap();
     for (key, _) in &accounts {
-        let gauge_account = client.get_account(&key).unwrap();
+        let gauge_account = client.get_account(key).unwrap();
         let gauge_data = Gauge::try_deserialize(&mut &gauge_account.data[..]).unwrap();
         let quarry_account = client.get_account(&gauge_data.quarry).unwrap();
         let quarry_data = Quarry::try_deserialize(&mut &quarry_account.data[..]).unwrap();

@@ -792,7 +792,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("calculate-inputs", matches)) => {
             let epoch = matches.get_one::<u32>("epoch").unwrap();
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
-            actions::management::calculate_inputs::calculate_inputs(&client, &config, *epoch)?;
+            let mut db_client = utils::connect_to_db()?;
+            actions::management::calculate_inputs::calculate_inputs(&client, &mut db_client, &config, *epoch)?;
         }
         Some(("calculate-weights", matches)) => {
             let epoch_data = matches.get_one::<String>("epoch-data").unwrap();

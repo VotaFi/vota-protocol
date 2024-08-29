@@ -2,7 +2,7 @@ use solana_program::address_lookup_table::AddressLookupTableAccount;
 use solana_program::pubkey;
 
 pub fn get_lookup_tables() -> Vec<AddressLookupTableAccount> {
-    return vec![AddressLookupTableAccount {
+    vec![AddressLookupTableAccount {
                    key: pubkey!("2g665Tvq8ut8j37co89iEhroGVAUwB4JEeVjjYyWsZL4"),
                     addresses: vec![
                         pubkey!("28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU"),
@@ -25,5 +25,5 @@ pub fn get_lookup_tables() -> Vec<AddressLookupTableAccount> {
                         pubkey!("Fq3rKWysysRYcCMWo1KGJLhHXLLBBrFyAV8HWJqSAHNq"),
                         pubkey!("21LhNJdUgeZQKETE78bNsmXU9fdsnjH6QRMuFPpRTq2X"),
                     ],
-    }];
+    }]
 }

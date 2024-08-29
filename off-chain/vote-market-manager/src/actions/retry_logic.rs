@@ -10,8 +10,6 @@ use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use std::env;
-use solana_program::address_lookup_table::AddressLookupTableAccount;
-use solana_sdk::pubkey;
 use tokio::time::{timeout, Duration};
 use crate::actions::lookup_table::get_lookup_tables;
 use crate::errors::VoteMarketManagerError::SimulationFailed;
@@ -23,11 +21,11 @@ pub fn retry_logic<'a>(
 ) -> Result<Signature, Box<dyn std::error::Error>> {
     let debug = true;
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let api_key: &str = &*env::var("HELIUS_KEY").unwrap();
+    let api_key: &str = &env::var("HELIUS_KEY").unwrap();
     let cluster: Cluster = Cluster::MainnetBeta;
     let helius: Helius = Helius::new(api_key, cluster).unwrap();
     if debug {
-        let mut sim_tx = Transaction::new_with_payer(&ixs, Some(&payer.pubkey()));
+        let mut sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
         let sim_strategy = Fixed::from_millis(1000).take(5);
         let sim_result = retry::retry(sim_strategy, || {
             let latest_blockhash = retry_rpc(|| {
@@ -51,7 +49,7 @@ pub fn retry_logic<'a>(
                     }
                 })
             });
-            return match sim {
+            match sim {
                 Ok(sim) => {
                     println!("simulated: {:?}", sim);
                     if sim.value.err.is_some() {
@@ -109,7 +107,7 @@ pub fn retry_logic<'a>(
         });
         let result = match timeout_result {
             Ok(result) => Some(result),
-            Err(e) => {
+            Err(_e) => {
                 println!("time elapsed. Moving on.");
                 None
             }

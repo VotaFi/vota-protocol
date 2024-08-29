@@ -28,7 +28,7 @@ pub fn claim(
         return Err("Failed to get accounts".into());
     };
     if epoch_gauge_vote_acount_info.is_none() {
-        println!("No votes for {}. Nothing to do", escrow.to_string());
+        println!("No votes for {}. Nothing to do", escrow);
         return Ok(());
     }
     let mut create_ata_ix = None;
@@ -80,7 +80,7 @@ pub fn claim(
         ixs.insert(0, ata_ix);
     }
 
-    let result = retry_logic::retry_logic(client, &payer, &mut ixs);
+    let result = retry_logic::retry_logic(client, payer, &mut ixs);
     //This worked once, but blockage expired will panic
     match result {
         Ok(sig) => {

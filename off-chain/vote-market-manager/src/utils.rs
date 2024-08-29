@@ -1,12 +1,16 @@
 use std::error::Error;
-use std::fs;
+use std::{env, fs};
 use std::path::Path;
 use chrono::Utc;
+use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use postgres::Client;
+use postgres_openssl::MakeTlsConnector;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
 use structured_logger::Builder;
 use structured_logger::json::new_writer;
+use crate::errors::VoteMarketManagerError;
 
 pub fn short_address(address: &Pubkey) -> String {
     let mut short = String::new();
@@ -22,7 +26,7 @@ pub fn get_multiple_accounts(client: &RpcClient, keys: Vec<Pubkey>) -> Vec<Optio
     // get 50 accounts at a time
     let mut accounts: Vec<Option<Account>> = Vec::new();
     for keys_chunk in keys.chunks(50) {
-        let accounts_chunk = client.get_multiple_accounts(&keys_chunk).unwrap();
+        let accounts_chunk = client.get_multiple_accounts(keys_chunk).unwrap();
         accounts.extend(accounts_chunk);
     }
     accounts
@@ -47,4 +51,26 @@ pub fn create_logger() -> Result<(), Box<dyn Error>> {
         )
         .init();
     Ok(())
+}
+
+pub fn connect_to_db() -> Result<Client, Box<dyn Error>> {
+    // Create Ssl postgres connector without verification
+    let mut builder = SslConnector::builder(SslMethod::tls())
+        .map_err(|e| Box::new(VoteMarketManagerError::DatabaseConnection {
+            error: e.to_string(),
+        }) as Box<dyn Error>)?;
+    builder.set_verify(SslVerifyMode::NONE);
+    let connector = MakeTlsConnector::new(builder.build());
+
+    // Connect to the PostgreSQL database
+    let mut connection = Client::connect(
+        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        connector,
+    );
+    match connection {
+        Ok(client) => Ok(client),
+        Err(e) => Err(Box::new(VoteMarketManagerError::DatabaseConnection {
+            error: e.to_string(),
+        })),
+    }
 }
