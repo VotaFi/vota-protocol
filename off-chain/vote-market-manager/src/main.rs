@@ -488,6 +488,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ),
         )
         .subcommand(
+            clap::command!("create-parallel-sh")
+                .arg(
+                    clap::Arg::new("epoch-data")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The data file output by the calculate-inputs subcommand"),
+                )
+                .arg(
+                    clap::Arg::new("vote-weights")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The vote weights file output by the calculate-weights subcommand"),
+                )
+        )
+        .subcommand(
             clap::command!("execute-claim")
                 .arg(
                     clap::Arg::new("config")
@@ -781,7 +796,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Some(("calculate-weights", matches)) => {
             let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
-            let epoch_data_string = std::fs::read_to_string(epoch_data)?;
+            let epoch_data_string = fs::read_to_string(epoch_data)?;
             let mut data: actions::management::data::EpochData =
                 serde_json::from_str(&epoch_data_string)?;
             let results = actions::management::calculate_weights::calculate_weights(&mut data)?;
@@ -840,6 +855,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 data,
                 vote_infos,
                 escrow,
+            )?;
+        }
+        Some(("create-parallel-sh", matches)) => {
+            println!("Creating parallel shorting and hedging");
+            let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
+            let epoch_data_string = fs::read_to_string(epoch_data)?;
+            let data: actions::management::data::EpochData =
+                serde_json::from_str(&epoch_data_string)?;
+            let vote_weights_file = matches.get_one::<String>("vote-weights").unwrap();
+            actions::management::create_parallel_sh::create_parallel_sh(
+                epoch_data,
+                vote_weights_file,
+                data,
             )?;
         }
         Some(("execute-claim", matches)) => {

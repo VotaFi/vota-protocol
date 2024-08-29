@@ -9,3 +9,4 @@ pub(crate) mod find_max_vote_buy;
 mod oracle;
 pub(crate) mod priority_fee;
 pub(crate) mod utils;
+pub(crate) mod create_parallel_sh;
