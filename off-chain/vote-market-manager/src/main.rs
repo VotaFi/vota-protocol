@@ -10,14 +10,12 @@ use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
-use structured_logger::json::new_writer;
-use structured_logger::Builder;
 
 use crate::accounts::resolve::{get_delegate, get_escrow_address_for_owner};
 use crate::actions::management::data::VoteInfo;
 use crate::actions::management::priority_fee::get_priority_fee;
 use crate::actions::queries::escrows;
-use crate::utils::short_address;
+use crate::utils::{create_logger, short_address};
 
 mod accounts;
 mod actions;
@@ -34,15 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let priority_fee = get_priority_fee();
     println!("priority_fee: {:?}", priority_fee);
-    Builder::with_level("info")
-        .with_target_writer(
-            "*",
-            new_writer(fs::File::create(format!(
-                "./vote_market_{}.log",
-                Utc::now().format("%Y-%m-%d-%H_%M")
-            ))?),
-        )
-        .init();
+    create_logger()?;
     let cmd = clap::Command::new("vote-market-manager")
         .bin_name("vote-market-manager")
         .arg(
@@ -487,6 +477,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .required(true)
                         .value_parser(value_parser!(String))
                         .help("The vote weights file output by the calculate-weights subcommand"),
+                )
+                .arg(
+                    clap::Arg::new("escrow")
+                        .required(false)
+                        .long("escrow")
+                        .short('e')
+                        .value_parser(value_parser!(String))
+                        .help("Owner of a single escrow to execute votes for"),
                 ),
         )
         .subcommand(
@@ -830,12 +828,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let vote_weights_file = matches.get_one::<String>("vote-weights").unwrap();
             let vote_weights_string = std::fs::read_to_string(vote_weights_file)?;
             let vote_infos: Vec<VoteInfo> = serde_json::from_str(&vote_weights_string)?;
+            let escrow= match matches.get_one::<String>("escrow")
+            {
+                Some(escrow) => Some(Pubkey::from_str(escrow)?),
+                None => None,
+            };
             actions::management::execute_votes::execute_votes(
                 &client,
                 &anchor_client,
                 &payer,
                 data,
                 vote_infos,
+                escrow,
             )?;
         }
         Some(("execute-claim", matches)) => {
