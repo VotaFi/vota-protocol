@@ -63,7 +63,7 @@ pub fn connect_to_db() -> Result<Client, Box<dyn Error>> {
     let connector = MakeTlsConnector::new(builder.build());
 
     // Connect to the PostgreSQL database
-    let mut connection = Client::connect(
+    let connection = Client::connect(
         &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
         connector,
     );

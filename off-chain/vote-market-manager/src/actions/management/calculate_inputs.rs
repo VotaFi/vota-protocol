@@ -16,13 +16,11 @@ use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
 use spl_token::state::Mint;
 use std::collections::HashMap;
-use std::env;
 use std::error::Error;
 use std::fs;
 use vote_market::state::VoteBuy;
 
 use postgres::Client;
-use postgres_openssl::MakeTlsConnector;
 
 /// Creates a json file containing all the data needed to calculate algorithmic
 /// vote weights and the maximum amount of vote buys that meet the efficiency
@@ -55,7 +53,7 @@ pub(crate) fn calculate_inputs(
     db_client: &mut Client,
     config: &Pubkey,
     epoch: u32,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     println!("calculate_inputs");
 
     //Get the vote buy accounts
@@ -212,12 +210,11 @@ pub(crate) fn calculate_inputs(
         usd_per_vote,
     };
     let epoch_stats_json = serde_json::to_string(&epoch_votes).unwrap();
-    fs::write(
-        format!(
+    let filename = format!(
             "./epoch_{}_vote_info{}.json",
             epoch,
-            Utc::now().format("%Y-%m-%d-%H_%M")
-        ),
+            Utc::now().format("%Y-%m-%d-%H_%M"));
+    fs::write(&filename,
         epoch_stats_json,
     )?;
 
@@ -239,7 +236,7 @@ pub(crate) fn calculate_inputs(
         ]
     )?;
 
-    Ok(())
+    Ok(filename)
 }
 
 fn calculate_payment(

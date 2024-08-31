@@ -793,7 +793,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let epoch = matches.get_one::<u32>("epoch").unwrap();
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
             let mut db_client = utils::connect_to_db()?;
-            actions::management::calculate_inputs::calculate_inputs(&client, &mut db_client, &config, *epoch)?;
+            let filename = actions::management::calculate_inputs::calculate_inputs(&client, &mut db_client, &config, *epoch)?;
+            println!("{}", filename);
         }
         Some(("calculate-weights", matches)) => {
             let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
@@ -803,14 +804,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let results = actions::management::calculate_weights::calculate_weights(&mut data)?;
             println!("results {:?}", results);
             let vote_weights_json = serde_json::to_string(&results).unwrap();
-            fs::write(
-                format!(
+            let filename = format!(
                     "./epoch_{}_weights{}.json",
                     data.epoch,
                     Utc::now().format("%Y-%m-%d-%H_%M")
-                ),
+                );
+            fs::write(&filename,
                 vote_weights_json,
             )?;
+            println!("{}", filename);
         }
         Some(("find-max-vote-buy", matches)) => {
             println!("Finding and setting max vote buy");
