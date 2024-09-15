@@ -188,38 +188,74 @@ pub fn vote(
         return Ok(());
     }
 
-    let commit_result = retry_logic(client, script_authority, &mut commit_ixs);
-    match commit_result {
-        Ok(sig) => {
-            log::info!(target: "vote",
-                sig=sig.to_string(),
-                user=owner.to_string(),
-                config=config.to_string(),
-                epoch=epoch;
-                "vote committed"
-                );
-            client.confirm_transaction_with_spinner(
-                &sig,
-                &client.get_latest_blockhash()?,
-                CommitmentConfig {
-                    commitment: CommitmentLevel::Confirmed,
-                },
-            )?;
-            println!("Vote committed for {:?}: {:?}", escrow, sig);
-        }
-        Err(e) => {
-            log::error!(target: "vote",
-                error=e.to_string(),
-                user=owner.to_string(),
-                config=config.to_string(),
-                epoch=epoch;
-                "failed to commit vote");
-            println!("Error committing vote for {:?}: {:?}", escrow, e);
-            return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
-                    e.to_string()
-                )));
+    // chunk commit_ixs 4 at a time
+    for chunk in commit_ixs.chunks(4) {
+        let commit_result = retry_logic(client, script_authority, &mut chunk.to_vec());
+        match commit_result {
+            Ok(sig) => {
+                log::info!(target: "vote",
+                    sig=sig.to_string(),
+                    user=owner.to_string(),
+                    config=config.to_string(),
+                    epoch=epoch;
+                    "vote committed"
+                    );
+                client.confirm_transaction_with_spinner(
+                    &sig,
+                    &client.get_latest_blockhash()?,
+                    CommitmentConfig {
+                        commitment: CommitmentLevel::Confirmed,
+                    },
+                )?;
+                println!("Vote committed for {:?}: {:?}", escrow, sig);
+            }
+            Err(e) => {
+                log::error!(target: "vote",
+                    error=e.to_string(),
+                    user=owner.to_string(),
+                    config=config.to_string(),
+                    epoch=epoch;
+                    "failed to commit vote");
+                println!("Error committing vote for {:?}: {:?}", escrow, e);
+                return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
+                        e.to_string()
+                    )));
+            }
         }
     }
+
+    // let commit_result = retry_logic(client, script_authority, &mut commit_ixs);
+    // match commit_result {
+    //     Ok(sig) => {
+    //         log::info!(target: "vote",
+    //             sig=sig.to_string(),
+    //             user=owner.to_string(),
+    //             config=config.to_string(),
+    //             epoch=epoch;
+    //             "vote committed"
+    //             );
+    //         client.confirm_transaction_with_spinner(
+    //             &sig,
+    //             &client.get_latest_blockhash()?,
+    //             CommitmentConfig {
+    //                 commitment: CommitmentLevel::Confirmed,
+    //             },
+    //         )?;
+    //         println!("Vote committed for {:?}: {:?}", escrow, sig);
+    //     }
+    //     Err(e) => {
+    //         log::error!(target: "vote",
+    //             error=e.to_string(),
+    //             user=owner.to_string(),
+    //             config=config.to_string(),
+    //             epoch=epoch;
+    //             "failed to commit vote");
+    //         println!("Error committing vote for {:?}: {:?}", escrow, e);
+    //         return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
+    //                 e.to_string()
+    //             )));
+    //     }
+    // }
 
     Ok(())
 }
