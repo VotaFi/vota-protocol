@@ -12,6 +12,7 @@ use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
 use solana_program::pubkey::Pubkey;
 
 pub fn get_delegated_escrows(client: &RpcClient, delegate: &Pubkey) -> Vec<(Pubkey, Escrow)> {
+    println!("delegate: {:?}", delegate);
     let accounts = client
         .get_program_accounts_with_config(
             &locked_voter_state::id(),

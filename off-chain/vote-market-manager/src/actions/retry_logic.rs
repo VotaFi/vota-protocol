@@ -19,7 +19,7 @@ pub fn retry_logic<'a>(
     payer: &'a Keypair,
     ixs: &'a mut Vec<Instruction>,
 ) -> Result<Signature, Box<dyn std::error::Error>> {
-    let debug = true;
+    let debug = false;
     let rt = tokio::runtime::Runtime::new().unwrap();
     let api_key: &str = &env::var("HELIUS_KEY").unwrap();
     let cluster: Cluster = Cluster::MainnetBeta;
@@ -97,7 +97,7 @@ pub fn retry_logic<'a>(
                 fee_payer: Some(payer),
             },
             send_options: RpcSendTransactionConfig {
-                skip_preflight: true,
+                skip_preflight: false,
                 preflight_commitment: Some(CommitmentLevel::Confirmed),
                 encoding: None,
                 max_retries: Some(0),

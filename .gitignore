@@ -12,3 +12,4 @@ test-accounts
 Anchor.toml.bak
 epoch_*
 *.log
+parallel*
