@@ -5842,6 +5842,8 @@ dependencies = [
  "anchor-client",
  "anchor-lang",
  "anyhow",
+ "borsh 0.10.3",
+ "borsh-derive 0.10.3",
  "chrono",
  "clap 4.5.4",
  "common",

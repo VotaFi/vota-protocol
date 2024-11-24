@@ -189,7 +189,7 @@ pub fn vote(
     }
 
     // chunk commit_ixs 4 at a time
-    for chunk in commit_ixs.chunks(4) {
+    for chunk in commit_ixs.chunks(3) {
         let commit_result = retry_logic(client, script_authority, &mut chunk.to_vec());
         match commit_result {
             Ok(sig) => {
