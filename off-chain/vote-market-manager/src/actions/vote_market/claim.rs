@@ -1,3 +1,4 @@
+use crate::actions::rpc_retry::retry_rpc;
 use crate::accounts::resolve::{get_delegate, get_vote_buy, resolve_vote_keys};
 use crate::actions::retry_logic;
 use crate::{ADMIN, GAUGEMEISTER};
@@ -7,6 +8,7 @@ use solana_sdk::signature::{Keypair, Signer};
 use spl_associated_token_account::get_associated_token_address;
 use spl_associated_token_account::instruction::create_associated_token_account;
 use std::error::Error;
+use solana_sdk::account::Account;
 
 pub fn claim(
     anchor_client: &anchor_client::Client<&Keypair>,
@@ -22,10 +24,24 @@ pub fn claim(
     let vote_delegate = get_delegate(&config);
     let seller_token_account = get_associated_token_address(&seller, &mint);
     let vote_accounts = resolve_vote_keys(&escrow, &gauge, epoch);
-    let [ref seller_token_account_info, ref epoch_gauge_vote_acount_info] =
-        client.get_multiple_accounts(&[seller_token_account, vote_accounts.epoch_gauge_vote])?[..]
-    else {
-        return Err("Failed to get accounts".into());
+    let result = retry_rpc(|| client.get_multiple_accounts(&[seller_token_account, vote_accounts.epoch_gauge_vote]));
+    let mut seller_token_account_info: Option<Account>;
+    let mut epoch_gauge_vote_acount_info: Option<Account>;
+    match result {
+        Ok(accounts) => {
+            seller_token_account_info = accounts[0].clone();
+            epoch_gauge_vote_acount_info = accounts[1].clone();
+        },
+        Err(e) => {
+            log::error!(target: "claim",
+                error=e.to_string(),
+                user=seller.to_string(),
+                config=config.to_string(),
+                gauge=gauge.to_string(),
+                epoch=epoch;
+                "failed to get accounts");
+            return Err("Failed to get accounts".into());
+        }
     };
     if epoch_gauge_vote_acount_info.is_none() {
         println!("No votes for {}. Nothing to do", escrow);
