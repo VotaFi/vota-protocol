@@ -20,11 +20,15 @@ pub fn retry_logic<'a>(
     ixs: &'a mut Vec<Instruction>,
 ) -> Result<Signature, Box<dyn std::error::Error>> {
     let debug = false;
+    println!("line 23");
     let rt = tokio::runtime::Runtime::new().unwrap();
+    println!("line 25");
     let api_key: &str = &env::var("HELIUS_KEY").unwrap();
     let cluster: Cluster = Cluster::MainnetBeta;
+    println!("line 28");
     let helius: Helius = Helius::new(api_key, cluster).unwrap();
     if debug {
+        println!("how did I get here?");
         let mut sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
         let sim_strategy = Fixed::from_millis(1000).take(5);
         let sim_result = retry::retry(sim_strategy, || {
@@ -88,6 +92,7 @@ pub fn retry_logic<'a>(
     }
     let mut tries = 0;
     loop {
+        println!("starting loop {}", tries);
         let timeout_result = rt.block_on(async { timeout(Duration::from_secs(15),
              helius.send_smart_transaction(SmartTransactionConfig {
             create_config: CreateSmartTransactionConfig {
