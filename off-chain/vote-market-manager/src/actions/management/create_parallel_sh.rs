@@ -42,7 +42,7 @@ pub(crate) fn create_parallel_sh(
     writeln!(file, "    echo \"Processing account: $account\"")?;
     writeln!(
         file,
-        "    ./target/release/vote-market-manager execute-votes {} {} -k ~/.config/solana/script-authority.json -e \"$account\" &",
+        "    ./target/release/vote-market-manager execute-votes {} {} -k ~/.config/solana/goki_owner.json -e \"$account\" &",
         data_file, weights_file
     )?;
     writeln!(file, "    current_jobs=$((current_jobs + 1))")?;

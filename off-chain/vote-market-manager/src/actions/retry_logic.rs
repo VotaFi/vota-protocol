@@ -5,12 +5,15 @@ use retry::delay::Fixed;
 use retry::Error as RetryError;
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcSendTransactionConfig, RpcSimulateTransactionConfig};
-use solana_program::instruction::Instruction;
+use solana_program::instruction::{AccountMeta, Instruction};
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::transaction::Transaction;
 use std::env;
+use anchor_lang::InstructionData;
+use solana_sdk::pubkey;
 use tokio::time::{timeout, Duration};
+use crate::actions::goki::OwnerInvokeInstructionV2;
 use crate::actions::lookup_table::get_lookup_tables;
 use crate::errors::VoteMarketManagerError::SimulationFailed;
 
@@ -19,13 +22,62 @@ pub fn retry_logic<'a>(
     payer: &'a Keypair,
     ixs: &'a mut Vec<Instruction>,
 ) -> Result<Signature, Box<dyn std::error::Error>> {
-    let debug = false;
+    let debug = true;
     let rt = tokio::runtime::Runtime::new().unwrap();
     let api_key: &str = &env::var("HELIUS_KEY").unwrap();
     let cluster: Cluster = Cluster::MainnetBeta;
     let helius: Helius = Helius::new(api_key, cluster).unwrap();
+
+    //let wallet_owner = pubkey!("J57bRWpXPD1LvtMYWtUSKijwu5WBSytsfGqqQFw5BVPH");
+    let invoker = pubkey!("AMd2nnFYtPGkeEbUvyVtWRDkG3nrESCvNW4C43mEvWrF");
+    let goki_program_id = pubkey!("GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH");
+    let smart_wallet = pubkey!("Eh7BJiZVxJ5bv9XA7NGS5UQTHmt1eZGb6aVFdSCT8XMg");
+    let goki_ixs: Vec<Instruction> = ixs.into_iter().map(|ix|
+        {
+            let updated_accounts: Vec<AccountMeta> = ix.accounts.iter().map(|acc| {
+                if acc.pubkey == payer.pubkey() {
+                    AccountMeta {
+                        pubkey: invoker,
+                        is_signer: false,
+                        is_writable: acc.is_writable,
+                    }
+                } else {
+                    acc.clone()
+                }
+            }).collect();
+            let mut accounts= vec![
+                AccountMeta {
+                    pubkey: smart_wallet,
+                    is_signer: false,
+                    is_writable: false,
+                },
+                AccountMeta {
+                    pubkey: payer.pubkey(),
+                    is_signer: true,
+                    is_writable: false,
+                },
+                AccountMeta {
+                    pubkey: ix.program_id,
+                    is_signer: false,
+                    is_writable: false,
+                },
+            ];
+            accounts.extend_from_slice(&updated_accounts);
+            let data = OwnerInvokeInstructionV2 {
+                index: 0,
+                bump: 254,
+                invoker,
+                data: ix.data.clone(),
+            };
+            Instruction {
+                program_id: goki_program_id,
+                accounts,
+                data: data.data(),
+            }
+        }).collect();
+
     if debug {
-        let mut sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
+        let mut sim_tx = Transaction::new_with_payer(&goki_ixs, Some(&payer.pubkey()));
         let sim_strategy = Fixed::from_millis(1000).take(5);
         let sim_result = retry::retry(sim_strategy, || {
             let latest_blockhash = retry_rpc(|| {
@@ -87,11 +139,12 @@ pub fn retry_logic<'a>(
         }
     }
     let mut tries = 0;
+
     loop {
         let timeout_result = rt.block_on(async { timeout(Duration::from_secs(15),
              helius.send_smart_transaction(SmartTransactionConfig {
             create_config: CreateSmartTransactionConfig {
-                instructions: ixs.clone(),
+                instructions: goki_ixs.clone(),
                 signers: vec![payer],
                 lookup_tables: Some(get_lookup_tables()),
                 fee_payer: Some(payer),
