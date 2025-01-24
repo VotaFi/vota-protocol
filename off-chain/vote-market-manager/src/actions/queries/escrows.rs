@@ -1,9 +1,10 @@
 use crate::accounts::resolve::resolve_vote_keys;
 use crate::utils::get_multiple_accounts;
-use crate::ANCHOR_DISCRIMINATOR_SIZE;
+use crate::{ANCHOR_DISCRIMINATOR_SIZE, GAUGEMEISTER, LOCKER};
 use anchor_lang::AccountDeserialize;
-use gauge_state::EpochGaugeVote;
-use locked_voter_state::Escrow;
+use borsh::BorshDeserialize;
+use gauge_state::{EpochGaugeVote, Gaugemeister};
+use locked_voter_state::{Escrow, Locker};
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
@@ -44,15 +45,26 @@ pub fn get_delegated_escrows(client: &RpcClient, delegate: &Pubkey) -> Vec<(Pubk
     escrows
 }
 
-pub(crate) fn get_escrow_votes(
-    client: &RpcClient,
-    delegate: &Pubkey,
-    gauge: &Pubkey,
-    epoch: u32,
-) {
+pub(crate) fn get_escrow_votes(client: &RpcClient, delegate: &Pubkey, gauge: &Pubkey, epoch: u32) {
     let escrows = get_delegated_escrows(client, delegate);
     let mut epoch_gauge_votes: Vec<Pubkey> = Vec::new();
-    for (key, _escrow) in escrows.clone() {
+    let gaugemeister_account = client.get_account(&GAUGEMEISTER).unwrap();
+    let gaugemeister_data = Gaugemeister::deserialize(&mut &gaugemeister_account.data[8..]).unwrap();
+    let locker_account = client.get_account(&LOCKER).unwrap();
+    let locker_data = Locker::deserialize(&mut &locker_account.data[8..]).unwrap();
+    for (key, escrow) in escrows.clone() {
+        let power = escrow.voting_power_at_time(&locker_data.params, gaugemeister_data.next_epoch_starts_at as i64);
+        match power {
+            Some(power) => {
+                if power < 1000000000 {
+                    continue;
+                }
+                println!("account: {:?}, power: {:?}", key, power);
+            }
+            None => {
+                return;
+            }
+        }
         let vote_accounts = resolve_vote_keys(&key, gauge, epoch);
         let gauge_vote = vote_accounts.epoch_gauge_vote;
         epoch_gauge_votes.push(gauge_vote);
@@ -60,7 +72,9 @@ pub(crate) fn get_escrow_votes(
     let epoch_gauge_vote_accounts = get_multiple_accounts(client, epoch_gauge_votes);
     let mut total_power: u64 = 0;
     for (index, account) in epoch_gauge_vote_accounts.iter().enumerate() {
-        let epoch_gauge_vote_data: Option<EpochGaugeVote> = account.as_ref().map(|account| EpochGaugeVote::try_deserialize(&mut account.data.as_slice()).unwrap());
+        let epoch_gauge_vote_data: Option<EpochGaugeVote> = account
+            .as_ref()
+            .map(|account| EpochGaugeVote::try_deserialize(&mut account.data.as_slice()).unwrap());
         match epoch_gauge_vote_data {
             Some(data) => {
                 println!(

@@ -77,7 +77,6 @@ pub(crate) fn calculate_inputs(
     println!("finished to fetch here");
     println!("prices: {:?}", prices);
 
-
     // Insert data into the `prices` table
     for (token, price) in &prices {
         let epoch = epoch as i32;
@@ -153,16 +152,12 @@ pub(crate) fn calculate_inputs(
                         gaugemeister_data.next_epoch_starts_at as i64,
                     )
                     .unwrap();
+                // Eliminate voters that have less than 1,000 veSBR
+                if voting_power < 1000000000 {
+                    continue;
+                }
                 total_delegated_votes += voting_power;
-                println!(
-                    "escrow: {:?}",
-                    escrow
-                        .voting_power_at_time(
-                            &locker_data.params,
-                            gaugemeister_data.next_epoch_starts_at as i64
-                        )
-                        .unwrap()
-                );
+                println!("escrow: {:?}", voting_power);
             }
             Ok(_) => {
                 already_voted_count += 1;
@@ -196,6 +191,22 @@ pub(crate) fn calculate_inputs(
     let usd_per_vote = sbr_per_vote * prices.get(&KnownTokens::Sbr).unwrap();
     println!("usd_per_vote: {:?}", usd_per_vote);
 
+    let escrow_owners: Vec<Pubkey> = delegated_voters
+        .iter()
+        .filter(|x| {
+            let voting_power =
+                x.1.voting_power_at_time(
+                    &locker_data.params,
+                    gaugemeister_data.next_epoch_starts_at as i64,
+                )
+                .unwrap();
+            // Eliminate voters that have less than 1,000 veSBR
+            return voting_power > 1000000000;
+        })
+        .map(|x| x.1.owner)
+        .collect();
+
+    println!("Number of escrow owners: {:?}", escrow_owners.len());
     let epoch_votes = EpochData {
         config: *config,
         epoch,
@@ -205,18 +216,17 @@ pub(crate) fn calculate_inputs(
         total_vote_buy_value,
         gauges,
         prices,
-        escrow_owners: delegated_voters.iter().map(|x| x.1.owner).collect(),
+        escrow_owners,
         sbr_per_epoch: 0,
         usd_per_vote,
     };
     let epoch_stats_json = serde_json::to_string(&epoch_votes).unwrap();
     let filename = format!(
-            "./epoch_{}_vote_info{}.json",
-            epoch,
-            Utc::now().format("%Y-%m-%d-%H_%M"));
-    fs::write(&filename,
-        epoch_stats_json,
-    )?;
+        "./epoch_{}_vote_info{}.json",
+        epoch,
+        Utc::now().format("%Y-%m-%d-%H_%M")
+    );
+    fs::write(&filename, epoch_stats_json)?;
 
     // Insert into the epoch_vote_info table
     let epoch = epoch as i32;

@@ -1,6 +1,6 @@
 use crate::ANCHOR_DISCRIMINATOR_SIZE;
 use anchor_lang::AnchorDeserialize;
-use gauge_state::{EpochGauge};
+use gauge_state::EpochGauge;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
@@ -20,8 +20,10 @@ pub(crate) fn get_direct_votes(
                     MemcmpEncodedBytes::Bytes(epoch.to_le_bytes().to_vec()),
                 )),
                 RpcFilterType::Memcmp(Memcmp::new(
-                     0,
-                     MemcmpEncodedBytes::Bytes(vec![0x53u8, 0xe5u8, 0x77u8, 0x85u8,  0x7eu8, 0xd1u8, 0x37u8, 0x6eu8]),
+                    0,
+                    MemcmpEncodedBytes::Bytes(vec![
+                        0x53u8, 0xe5u8, 0x77u8, 0x85u8, 0x7eu8, 0xd1u8, 0x37u8, 0x6eu8,
+                    ]),
                 )),
             ]),
             account_config: RpcAccountInfoConfig {

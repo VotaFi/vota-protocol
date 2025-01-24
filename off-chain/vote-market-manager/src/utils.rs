@@ -1,6 +1,4 @@
-use std::error::Error;
-use std::{env, fs};
-use std::path::Path;
+use crate::errors::VoteMarketManagerError;
 use chrono::Utc;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::Client;
@@ -8,9 +6,11 @@ use postgres_openssl::MakeTlsConnector;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
-use structured_logger::Builder;
+use std::error::Error;
+use std::path::Path;
+use std::{env, fs};
 use structured_logger::json::new_writer;
-use crate::errors::VoteMarketManagerError;
+use structured_logger::Builder;
 
 pub fn short_address(address: &Pubkey) -> String {
     let mut short = String::new();
@@ -33,7 +33,7 @@ pub fn get_multiple_accounts(client: &RpcClient, keys: Vec<Pubkey>) -> Vec<Optio
 }
 
 pub fn create_logger() -> Result<(), Box<dyn Error>> {
-//Add a pid so parallel processes won't grab the same log file
+    //Add a pid so parallel processes won't grab the same log file
     let pid = std::process::id();
     let log_dir = "./logs";
     if !Path::new(log_dir).exists() {
@@ -55,10 +55,11 @@ pub fn create_logger() -> Result<(), Box<dyn Error>> {
 
 pub fn connect_to_db() -> Result<Client, Box<dyn Error>> {
     // Create Ssl postgres connector without verification
-    let mut builder = SslConnector::builder(SslMethod::tls())
-        .map_err(|e| Box::new(VoteMarketManagerError::DatabaseConnection {
+    let mut builder = SslConnector::builder(SslMethod::tls()).map_err(|e| {
+        Box::new(VoteMarketManagerError::DatabaseConnection {
             error: e.to_string(),
-        }) as Box<dyn Error>)?;
+        }) as Box<dyn Error>
+    })?;
     builder.set_verify(SslVerifyMode::NONE);
     let connector = MakeTlsConnector::new(builder.build());
 

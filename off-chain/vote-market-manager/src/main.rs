@@ -13,7 +13,6 @@ use solana_sdk::signature::Signer;
 
 use crate::accounts::resolve::{get_delegate, get_escrow_address_for_owner};
 use crate::actions::management::data::VoteInfo;
-use crate::actions::management::priority_fee::get_priority_fee;
 use crate::actions::queries::escrows;
 use crate::utils::{create_logger, short_address};
 
@@ -30,8 +29,6 @@ const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    let priority_fee = get_priority_fee();
-    println!("priority_fee: {:?}", priority_fee);
     create_logger()?;
     let cmd = clap::Command::new("vote-market-manager")
         .bin_name("vote-market-manager")
@@ -500,7 +497,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .required(true)
                         .value_parser(value_parser!(String))
                         .help("The vote weights file output by the calculate-weights subcommand"),
-                )
+                ),
         )
         .subcommand(
             clap::command!("execute-claim")
@@ -793,7 +790,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let epoch = matches.get_one::<u32>("epoch").unwrap();
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
             let mut db_client = utils::connect_to_db()?;
-            let filename = actions::management::calculate_inputs::calculate_inputs(&client, &mut db_client, &config, *epoch)?;
+            let filename = actions::management::calculate_inputs::calculate_inputs(
+                &client,
+                &mut db_client,
+                &config,
+                *epoch,
+            )?;
             println!("{}", filename);
         }
         Some(("calculate-weights", matches)) => {
@@ -805,13 +807,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("results {:?}", results);
             let vote_weights_json = serde_json::to_string(&results).unwrap();
             let filename = format!(
-                    "./epoch_{}_weights{}.json",
-                    data.epoch,
-                    Utc::now().format("%Y-%m-%d-%H_%M")
-                );
-            fs::write(&filename,
-                vote_weights_json,
-            )?;
+                "./epoch_{}_weights{}.json",
+                data.epoch,
+                Utc::now().format("%Y-%m-%d-%H_%M")
+            );
+            fs::write(&filename, vote_weights_json)?;
             println!("{}", filename);
         }
         Some(("find-max-vote-buy", matches)) => {
@@ -846,8 +846,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let vote_weights_file = matches.get_one::<String>("vote-weights").unwrap();
             let vote_weights_string = std::fs::read_to_string(vote_weights_file)?;
             let vote_infos: Vec<VoteInfo> = serde_json::from_str(&vote_weights_string)?;
-            let escrow= match matches.get_one::<String>("escrow")
-            {
+            let escrow = match matches.get_one::<String>("escrow") {
                 Some(escrow) => Some(Pubkey::from_str(escrow)?),
                 None => None,
             };
@@ -861,7 +860,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )?;
         }
         Some(("create-parallel-sh", matches)) => {
-            println!("Creating parallel shorting and hedging");
+            println!("Creating parallel script");
             let epoch_data = matches.get_one::<String>("epoch-data").unwrap();
             let epoch_data_string = fs::read_to_string(epoch_data)?;
             let data: actions::management::data::EpochData =

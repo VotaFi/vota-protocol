@@ -1,15 +1,16 @@
-use std::fs;
-use std::fs::File;
-use std::io::{Write};
-use std::os::unix::fs::PermissionsExt;
+use crate::actions::management::data::EpochData;
 use chrono::Utc;
 use solana_program::pubkey::Pubkey;
-use crate::actions::management::data::{EpochData};
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 
 pub(crate) fn create_parallel_sh(
     data_file: &String,
     weights_file: &String,
-    epoch_data: EpochData) -> Result<(), Box<dyn std::error::Error>> {
+    epoch_data: EpochData,
+) -> Result<(), Box<dyn std::error::Error>> {
     let escrows: Vec<Pubkey> = epoch_data.escrow_owners.clone();
     let timestamp = Utc::now().format("%Y-%m-%d-%H_%M");
     let output_file = format!("parallel_{}.sh", timestamp);
@@ -51,9 +52,15 @@ pub(crate) fn create_parallel_sh(
         file,
         "    # If the number of current jobs equals the maximum allowed, wait for them to finish"
     )?;
-    writeln!(file, "    if [ \"$current_jobs\" -ge \"$max_parallel_jobs\" ]; then")?;
+    writeln!(
+        file,
+        "    if [ \"$current_jobs\" -ge \"$max_parallel_jobs\" ]; then"
+    )?;
     writeln!(file, "        wait -n")?;
-    writeln!(file, "        # Decrease the count of current jobs after one completes")?;
+    writeln!(
+        file,
+        "        # Decrease the count of current jobs after one completes"
+    )?;
     writeln!(file, "        current_jobs=$((current_jobs - 1))")?;
     writeln!(file, "    fi")?;
     writeln!(file, "done")?;
@@ -65,6 +72,9 @@ pub(crate) fn create_parallel_sh(
     writeln!(file)?;
     writeln!(file, "elapsed_time=$((end_time - start_time))")?;
     writeln!(file)?;
-    writeln!(file, "echo \"All processes completed in $elapsed_time seconds.\"")?;
+    writeln!(
+        file,
+        "echo \"All processes completed in $elapsed_time seconds.\""
+    )?;
     Ok(())
 }

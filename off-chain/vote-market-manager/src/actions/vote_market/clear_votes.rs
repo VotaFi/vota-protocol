@@ -49,22 +49,24 @@ pub(crate) fn clear_votes(
             continue;
         }
         let gauge_vote = gauge_votes[i];
-        vote_ixs.extend(program
-            .request()
-            .signer(script_authority)
-            .args(vote_market::instruction::Vote { weight: 0 })
-            .accounts(vote_market::accounts::Vote {
-                config,
-                script_authority: script_authority.pubkey(),
-                gaugemeister: GAUGEMEISTER,
-                gauge: *gauge,
-                gauge_voter,
-                gauge_vote,
-                escrow,
-                vote_delegate,
-                gauge_program: gauge_state::id(),
-            })
-            .instructions()?);
+        vote_ixs.extend(
+            program
+                .request()
+                .signer(script_authority)
+                .args(vote_market::instruction::Vote { weight: 0 })
+                .accounts(vote_market::accounts::Vote {
+                    config,
+                    script_authority: script_authority.pubkey(),
+                    gaugemeister: GAUGEMEISTER,
+                    gauge: *gauge,
+                    gauge_voter,
+                    gauge_vote,
+                    escrow,
+                    vote_delegate,
+                    gauge_program: gauge_state::id(),
+                })
+                .instructions()?,
+        );
         println!("Clearing votes");
     }
 

@@ -50,36 +50,38 @@ pub fn vote(
             }
 
             println!("Prepare voter completed");
-            vote_ixs.extend(program
-                .request()
-                .signer(script_authority)
-                .args(vote_market::instruction::Vote {
-                    weight: weight.weight,
-                })
-                .accounts(vote_market::accounts::Vote {
-                    config,
-                    script_authority: script_authority.pubkey(),
-                    gaugemeister: GAUGEMEISTER,
-                    gauge: weight.gauge,
-                    gauge_voter: vote_accounts.gauge_voter,
-                    gauge_vote: vote_accounts.gauge_vote,
-                    escrow,
-                    vote_delegate,
-                    gauge_program: gauge_state::id(),
-                })
-                .instructions()?);
+            vote_ixs.extend(
+                program
+                    .request()
+                    .signer(script_authority)
+                    .args(vote_market::instruction::Vote {
+                        weight: weight.weight,
+                    })
+                    .accounts(vote_market::accounts::Vote {
+                        config,
+                        script_authority: script_authority.pubkey(),
+                        gaugemeister: GAUGEMEISTER,
+                        gauge: weight.gauge,
+                        gauge_voter: vote_accounts.gauge_voter,
+                        gauge_vote: vote_accounts.gauge_vote,
+                        escrow,
+                        vote_delegate,
+                        gauge_program: gauge_state::id(),
+                    })
+                    .instructions()?,
+            );
         }
 
         let vote_result = retry_logic(client, script_authority, &mut vote_ixs);
         match vote_result {
             Ok(sig) => {
                 log::info!(target: "vote",
-                    sig=sig.to_string(),
-                    user=owner.to_string(),
-                    config=config.to_string(),
-                    epoch=epoch;
-                    "set vote weight"
-                    );
+                sig=sig.to_string(),
+                user=owner.to_string(),
+                config=config.to_string(),
+                epoch=epoch;
+                "set vote weight"
+                );
                 println!("Vote succsesful for {:?}: {:?}", escrow, sig);
             }
             Err(e) => {
@@ -91,8 +93,8 @@ pub fn vote(
                     "failed to set vote weight");
                 println!("Error sending vote for {:?}: {:?}", escrow, e);
                 return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
-                        e.to_string()
-                    )));
+                    e.to_string()
+                )));
             }
         }
 
@@ -163,25 +165,27 @@ pub fn vote(
             continue;
         }
         // Commit vote
-        commit_ixs.extend(program
-            .request()
-            .signer(script_authority)
-            .args(vote_market::instruction::CommitVote { epoch })
-            .accounts(vote_market::accounts::CommitVote {
-                config,
-                script_authority: script_authority.pubkey(),
-                gaugemeister: GAUGEMEISTER,
-                gauge: weight.gauge,
-                gauge_voter: vote_accounts.gauge_voter,
-                gauge_vote: vote_accounts.gauge_vote,
-                epoch_gauge: vote_accounts.epoch_gauge,
-                epoch_gauge_voter: vote_accounts.epoch_gauge_voter,
-                epoch_gauge_vote: vote_accounts.epoch_gauge_vote,
-                vote_delegate,
-                gauge_program: gauge_state::id(),
-                system_program: solana_program::system_program::id(),
-            })
-            .instructions()?);
+        commit_ixs.extend(
+            program
+                .request()
+                .signer(script_authority)
+                .args(vote_market::instruction::CommitVote { epoch })
+                .accounts(vote_market::accounts::CommitVote {
+                    config,
+                    script_authority: script_authority.pubkey(),
+                    gaugemeister: GAUGEMEISTER,
+                    gauge: weight.gauge,
+                    gauge_voter: vote_accounts.gauge_voter,
+                    gauge_vote: vote_accounts.gauge_vote,
+                    epoch_gauge: vote_accounts.epoch_gauge,
+                    epoch_gauge_voter: vote_accounts.epoch_gauge_voter,
+                    epoch_gauge_vote: vote_accounts.epoch_gauge_vote,
+                    vote_delegate,
+                    gauge_program: gauge_state::id(),
+                    system_program: solana_program::system_program::id(),
+                })
+                .instructions()?,
+        );
     }
     if commit_ixs.is_empty() {
         println!("Votes already committed");
@@ -194,12 +198,12 @@ pub fn vote(
         match commit_result {
             Ok(sig) => {
                 log::info!(target: "vote",
-                    sig=sig.to_string(),
-                    user=owner.to_string(),
-                    config=config.to_string(),
-                    epoch=epoch;
-                    "vote committed"
-                    );
+                sig=sig.to_string(),
+                user=owner.to_string(),
+                config=config.to_string(),
+                epoch=epoch;
+                "vote committed"
+                );
                 client.confirm_transaction_with_spinner(
                     &sig,
                     &client.get_latest_blockhash()?,
@@ -218,8 +222,8 @@ pub fn vote(
                     "failed to commit vote");
                 println!("Error committing vote for {:?}: {:?}", escrow, e);
                 return Err(Box::<dyn std::error::Error>::from(anyhow::anyhow!(
-                        e.to_string()
-                    )));
+                    e.to_string()
+                )));
             }
         }
     }

@@ -11,7 +11,7 @@ pub struct VoteBuy {
     /// This amount or the amount field, whichever is less, will be distributed
     pub max_amount: Option<u64>,
     /// Anyone can create a vault for buying tokens. This is the creator
-    /// of the vault who is will be entitled to any incentives and is
+    /// of the vault who is entitled to any incentives and is
     /// allowed to add additional funds.
     pub buyer: Pubkey,
 }
