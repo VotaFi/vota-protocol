@@ -70,23 +70,25 @@ pub(crate) fn clear_votes(
         println!("Clearing votes");
     }
 
-    let result = retry_logic(client, script_authority, &mut vote_ixs);
-    match result {
-        Ok(sig) => {
-            log::info!(target: "vote",
+    for chunk in vote_ixs.chunks(3) {
+        let result = retry_logic(client, script_authority, &mut chunk.to_vec());
+        match result {
+            Ok(sig) => {
+                log::info!(target: "vote",
                 sig=sig.to_string(),
                 user=owner.to_string(),
                 config=config.to_string();
                 "cleared votes");
-            println!("Cleared votes for {:?}: {:?}", escrow, sig);
-        }
-        Err(e) => {
-            log::error!(target: "vote",
+                println!("Cleared votes for {:?}: {:?}", escrow, sig);
+            }
+            Err(e) => {
+                log::error!(target: "vote",
                 error=e.to_string(),
                 user=owner.to_string(),
                 config=config.to_string();
                 "failed to clear votes");
-            println!("Error clearing votes for {:?}: {:?}", escrow, e);
+                println!("Error clearing votes for {:?}: {:?}", escrow, e);
+            }
         }
     }
     println!("cleared votes");

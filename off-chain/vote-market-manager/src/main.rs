@@ -564,6 +564,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let gauge = Pubkey::from_str(matches.get_one::<String>("gauge").unwrap())?;
             let epoch = matches.get_one::<u32>("epoch").unwrap();
             let delegate = get_delegate(&config);
+            println!("Epoch {:?}", epoch);
             escrows::get_escrow_votes(&client, &delegate, &gauge, *epoch);
             println!("done");
         }

@@ -5,6 +5,7 @@ use crate::actions::vote_market::claim::claim;
 use anchor_client::Client;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
+use solana_sdk::pubkey;
 use solana_sdk::signature::Keypair;
 
 pub(crate) fn execute_claim(
@@ -19,6 +20,9 @@ pub(crate) fn execute_claim(
     for vote_buy in get_all_vote_buys(epoch, &config) {
         for escrow in escrows.clone() {
             println!("claiming {:?} for {}", escrow.1.owner, vote_buy.gauge);
+            if escrow.1.owner.eq(&pubkey!("DHYsYFjxwkbtW8HadhdtvDnTcJcLDziZ7PcVSR2sKSRQ")) {
+                continue;
+            }
             claim(
                 anchor_client,
                 client,

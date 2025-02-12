@@ -45,9 +45,14 @@ pub fn get_delegated_escrows(client: &RpcClient, delegate: &Pubkey) -> Vec<(Pubk
     escrows
 }
 
+struct EpochGuageVoteInfo {
+    pub epoch_gauge_vote: Pubkey,
+    pub escrow: (Pubkey, Escrow),
+}
+
 pub(crate) fn get_escrow_votes(client: &RpcClient, delegate: &Pubkey, gauge: &Pubkey, epoch: u32) {
     let escrows = get_delegated_escrows(client, delegate);
-    let mut epoch_gauge_votes: Vec<Pubkey> = Vec::new();
+    let mut epoch_gauge_votes: Vec<EpochGuageVoteInfo> = Vec::new();
     let gaugemeister_account = client.get_account(&GAUGEMEISTER).unwrap();
     let gaugemeister_data = Gaugemeister::deserialize(&mut &gaugemeister_account.data[8..]).unwrap();
     let locker_account = client.get_account(&LOCKER).unwrap();
@@ -59,7 +64,7 @@ pub(crate) fn get_escrow_votes(client: &RpcClient, delegate: &Pubkey, gauge: &Pu
                 if power < 1000000000 {
                     continue;
                 }
-                println!("account: {:?}, power: {:?}", key, power);
+            //    println!("account: {:?}, power: {:?}", key, power);
             }
             None => {
                 return;
@@ -67,9 +72,14 @@ pub(crate) fn get_escrow_votes(client: &RpcClient, delegate: &Pubkey, gauge: &Pu
         }
         let vote_accounts = resolve_vote_keys(&key, gauge, epoch);
         let gauge_vote = vote_accounts.epoch_gauge_vote;
-        epoch_gauge_votes.push(gauge_vote);
+        epoch_gauge_votes.push(EpochGuageVoteInfo {
+            epoch_gauge_vote: gauge_vote,
+            escrow:  (key, escrow)
+        });
     }
-    let epoch_gauge_vote_accounts = get_multiple_accounts(client, epoch_gauge_votes);
+    println!("number of votes: {:?}", epoch_gauge_votes.len());
+    let epoch_gauge_vote_accounts = get_multiple_accounts(client,
+      epoch_gauge_votes.iter().map(|x| x.epoch_gauge_vote).collect());
     let mut total_power: u64 = 0;
     for (index, account) in epoch_gauge_vote_accounts.iter().enumerate() {
         let epoch_gauge_vote_data: Option<EpochGaugeVote> = account
@@ -78,8 +88,10 @@ pub(crate) fn get_escrow_votes(client: &RpcClient, delegate: &Pubkey, gauge: &Pu
         match epoch_gauge_vote_data {
             Some(data) => {
                 println!(
-                    "account: {:?}, vote: {:?}",
-                    escrows[index].1.owner, data.allocated_power
+                    "account: {:?}, vote: {:?}, escrow: {:?}, epochGaugeVote: {:?}",
+                    epoch_gauge_votes[index].escrow.1.owner, data.allocated_power,
+                    epoch_gauge_votes[index].escrow.0,
+                    epoch_gauge_votes[index].epoch_gauge_vote
                 );
                 total_power += data.allocated_power;
             }
