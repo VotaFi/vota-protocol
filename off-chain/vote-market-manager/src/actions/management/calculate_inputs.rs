@@ -65,9 +65,7 @@ pub(crate) fn calculate_inputs(
     let mut tokens: Vec<KnownTokens> = vote_buys.iter().map(|x| x.mint.into()).collect();
 
     // Add SBR price
-    tokens.push(KnownTokens::Meta);
     tokens.push(KnownTokens::Sbr);
-    tokens.push(KnownTokens::Uxp);
     tokens.push(KnownTokens::Usdc);
     tokens.push(KnownTokens::Blze);
 
