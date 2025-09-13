@@ -35,6 +35,17 @@ pub mod vote_market {
         Ok(())
     }
 
+    pub fn update_reward_accumulator_config(
+        ctx: Context<CreateRewardAccumulatorConfig>,
+        reward_accumulator_program: Pubkey,
+        namespace: [u8; 8]
+    ) -> Result<()> {
+        let cfg = &mut ctx.accounts.reward_accumulator_config;
+        cfg.reward_accumulator_program = reward_accumulator_program;
+        cfg.namespace = namespace;
+        Ok(())
+    }
+
     pub fn update_admin(ctx: Context<UpdateAdmin>, admin: Pubkey) -> Result<()> {
         ctx.accounts.config.admin = admin;
         Ok(())
@@ -336,6 +347,160 @@ pub mod vote_market {
         Ok(())
     }
 
+    pub fn claim_to_reward_accumulator(ctx: Context<ClaimToRewardAccumulator>, epoch: u32) -> Result<()> {
+        //seed checks. Doing this on the Accounts struct uses too much stack space
+        msg!("Claiming payment");
+        let (expected_epoch_gauge, _) = Pubkey::find_program_address(
+            &[
+                b"EpochGauge".as_ref(),
+                ctx.accounts.gauge.key().as_ref(),
+                epoch.to_le_bytes().as_ref(),
+            ],
+            &gauge_state::id(),
+        );
+        require_keys_eq!(expected_epoch_gauge, ctx.accounts.epoch_gauge.key());
+        let (expected_epoch_guage_vote, _) = Pubkey::find_program_address(
+            &[
+                b"EpochGaugeVote".as_ref(),
+                ctx.accounts.gauge_vote.key().as_ref(),
+                epoch.to_le_bytes().as_ref(),
+            ],
+            &gauge_state::id(),
+        );
+        require_keys_eq!(
+            expected_epoch_guage_vote,
+            ctx.accounts.epoch_gauge_vote.key()
+        );
+        let (expected_seller_token_account_owner, _) = Pubkey::find_program_address(
+            &[b"token-auth",
+                ctx.accounts.reward_accumulator_config.namespace.as_ref(),
+                ctx.accounts.seller.key().as_ref()],
+            &ctx.accounts.reward_accumulator_config.reward_accumulator_program
+        );
+        require_keys_eq!(expected_seller_token_account_owner, ctx.accounts.seller_token_account.owner);
+        if epoch > ctx.accounts.gaugemeister.current_rewards_epoch {
+            return err!(errors::VoteMarketError::EpochVotingNotCompleted);
+        }
+        let total_power = ctx.accounts.epoch_gauge.total_power;
+        let allocated_power = ctx.accounts.epoch_gauge_vote.allocated_power;
+
+        let vote_buy = &ctx.accounts.vote_buy;
+        let total_vote_payment = match vote_buy.max_amount {
+            Some(max_amount) => min(max_amount, vote_buy.amount),
+            None => {
+                return err!(errors::VoteMarketError::MaxVoteBuyAmountNotSet);
+            }
+        };
+        msg!("Total Power: {}", total_power);
+        msg!("Allocated Power: {}", allocated_power);
+        msg!("Total Vote Payment: {}", total_vote_payment);
+        let total_payment = get_user_payment(total_power, allocated_power, total_vote_payment)?;
+        let fee = get_fee(total_payment, ctx.accounts.config.claim_fee)?;
+        let payment_to_user = total_payment - fee;
+        let transfer_ix = spl_token::instruction::transfer(
+            &ctx.accounts.token_program.key(),
+            &ctx.accounts.token_vault.key(),
+            &ctx.accounts.seller_token_account.key(),
+            &vote_buy.key(),
+            &[],
+            payment_to_user,
+        )?;
+        let (_, bump) = Pubkey::find_program_address(
+            &[
+                b"vote-buy".as_ref(),
+                epoch.to_le_bytes().as_ref(),
+                ctx.accounts.config.key().as_ref(),
+                ctx.accounts.gauge.key().as_ref(),
+            ],
+            ctx.program_id,
+        );
+        invoke_signed(
+            &transfer_ix,
+            &[
+                ctx.accounts.token_vault.to_account_info(),
+                ctx.accounts.seller_token_account.to_account_info(),
+                ctx.accounts.vote_buy.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+            ],
+            &[&[
+                b"vote-buy".as_ref(),
+                epoch.to_le_bytes().as_ref(),
+                ctx.accounts.config.key().as_ref(),
+                ctx.accounts.gauge.key().as_ref(),
+                &[bump],
+            ]],
+        )?;
+        let transfer_to_treasury_ix = spl_token::instruction::transfer(
+            &ctx.accounts.token_program.key(),
+            &ctx.accounts.token_vault.key(),
+            &ctx.accounts.treasury.key(),
+            &vote_buy.key(),
+            &[],
+            fee,
+        )?;
+        invoke_signed(
+            &transfer_to_treasury_ix,
+            &[
+                ctx.accounts.token_vault.to_account_info(),
+                ctx.accounts.treasury.to_account_info(),
+                ctx.accounts.vote_buy.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+            ],
+            &[&[
+                b"vote-buy".as_ref(),
+                epoch.to_le_bytes().as_ref(),
+                ctx.accounts.config.key().as_ref(),
+                ctx.accounts.gauge.key().as_ref(),
+                &[bump],
+            ]],
+        )?;
+
+        //Calculating the discriminator manually instead of including the crate
+        //because the anchor_lang version of gauge is not compatible with this program.
+        let mut data: Vec<u8> =
+            solana_program::hash::hash(b"global:close_epoch_gauge_vote").to_bytes()[..8].to_vec();
+        data.extend_from_slice(&epoch.to_le_bytes());
+        let (_, vote_delegate_bump) = Pubkey::find_program_address(
+            &[
+                b"vote-delegate".as_ref(),
+                ctx.accounts.config.key().as_ref(),
+            ],
+            ctx.program_id,
+        );
+        let close_ix = anchor_lang::solana_program::instruction::Instruction {
+            program_id: ctx.accounts.gauge_program.key(),
+            accounts: vec![
+                AccountMeta::new(ctx.accounts.epoch_gauge_vote.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.gaugemeister.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.gauge.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.gauge_voter.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.gauge_vote.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.escrow.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.vote_delegate.key(), true),
+                AccountMeta::new(ctx.accounts.vote_delegate.key(), false),
+            ],
+            data,
+        };
+        invoke_signed(
+            &close_ix,
+            &[
+                ctx.accounts.epoch_gauge_vote.to_account_info(),
+                ctx.accounts.gaugemeister.to_account_info(),
+                ctx.accounts.gauge.to_account_info(),
+                ctx.accounts.gauge_voter.to_account_info(),
+                ctx.accounts.gauge_vote.to_account_info(),
+                ctx.accounts.escrow.to_account_info(),
+                ctx.accounts.vote_delegate.to_account_info(),
+                ctx.accounts.vote_delegate.to_account_info(),
+            ],
+            &[&[
+                b"vote-delegate".as_ref(),
+                ctx.accounts.config.key().as_ref(),
+                &[vote_delegate_bump],
+            ]],
+        )?;
+        Ok(())
+    }
     /// This is used in a trait on the Accounts definition
     #[allow(unused_variables)]
     pub fn commit_vote(ctx: Context<CommitVote>, epoch: u32) -> Result<()> {
@@ -471,6 +636,21 @@ pub struct CreateConfig<'info> {
         seeds = [b"allow-list".as_ref(), config.to_account_info().key.as_ref()],
         bump)]
     pub allowed_mints: Account<'info, AllowedMints>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct CreateRewardAccumulatorConfig<'info> {
+    #[account(has_one = admin)]
+    pub config: Account<'info, VoteMarketConfig>,
+    #[account(init_if_needed,
+    payer = admin,
+    space = VoteMarketConfig::LEN,
+    seeds = [b"reward-accumulator-config".as_ref(), config.to_account_info().key.as_ref()],
+        bump)]
+    pub reward_accumulator_config: Account<'info, RewardAccumulatorConfig>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -632,10 +812,7 @@ pub struct ClaimToRewardAccumulator<'info> {
     pub script_authority: Signer<'info>,
     #[account(mut)]
     pub seller: SystemAccount<'info>,
-    #[account(mut,
-    associated_token::mint = mint,
-    associated_token::authority = seller,
-    )]
+    #[account(mut)]
     pub seller_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut,
     associated_token::mint = mint,
@@ -708,13 +885,10 @@ pub struct ClaimToRewardAccumulator<'info> {
     pub epoch_gauge_vote: Account<'info, gauge_state::EpochGaugeVote>,
     pub gauge_program: Program<'info, GaugeProgram>,
     pub locked_voter_program: Program<'info, LockedVoterProgram>,
-    #[account(has_one = reward_accumulator_program,
-        seeds=[b"RAConfig",
+    #[account(seeds=[b"reward-accumulator-config",
     config.key().as_ref()],
     bump)]
     pub reward_accumulator_config: Account<'info, RewardAccumulatorConfig>,
-    /// CHECK: Checked by reward_accumulator_config
-    pub reward_accumulator_program: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
