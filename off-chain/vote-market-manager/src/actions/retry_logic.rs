@@ -184,6 +184,7 @@ pub fn retry_logic<'a>(
                 }
             ]
         });
+        println!("Trying to get prio fee");
         let response = http_client
             .post("https://vota.boundlessendeavors.dev") // Replace with your RPC endpoint
             .json(&body)
@@ -191,7 +192,7 @@ pub fn retry_logic<'a>(
             .unwrap()
             .text();
         let data: Value = serde_json::from_str(&response.unwrap().to_string()).unwrap();
-       // println!("Response: {:?}", &data);
+        println!("Response: {:?}", &data);
 
         let priority_fee : Value = data["result"]["priorityFeeEstimate"].clone();
         let f64_priority_fee = priority_fee.as_f64().unwrap();

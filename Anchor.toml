@@ -13,7 +13,7 @@ wallet = "~/.config/solana/id.json"
 url = "https://api.apr.dev"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 --file ./tests/vote-market-voting.test.ts --file ./tests/vote-market-rewards.test.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 --file ./tests/driver.test.ts"
 
 [test]
 startup_wait = 10000
@@ -26,53 +26,105 @@ program = "deps/GaugesLJrnVjNNWLReiw3Q7xQhycSBRgeHGTMDUaX231.so"
 address = "LocktDzaV1W2Bm9DeZeiyz4J9zs4fRqNiYqQyracRXw"
 program = "deps/LocktDzaV1W2Bm9DeZeiyz4J9zs4fRqNiYqQyracRXw.so"
 
+[[test.genesis]]
+address = "rwRDmR2VVp8wJrU8rfavxYWJZrLe3aCStcAZrZcPZmQ"
+program = "deps/rwRDmR2VVp8wJrU8rfavxYWJZrLe3aCStcAZrZcPZmQ.so"
+
 [[test.validator.account]]
 address = "28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU"
-filename = "./test-accounts/gaugemeister.json"
+filename = "./test-accounts/gaugemeister0.json"
 
 [[test.validator.account]]
 address = "3xC4eW6xhW3Gpb4T5sCKFe73ay2K4aUUfxL57XFdguJx"
-filename = "./test-accounts/gauge.json"
+filename = "./test-accounts/gauge0.json"
 
 [[test.validator.account]]
 address = "2AtXU77mwCTgEEnpAvz9uFUWBNmt7f4rCCGQVKwQBGpw"
-filename = "./test-accounts/epoch-gauge.json"
+filename = "./test-accounts/epoch-gauge0.json"
 
 [[test.validator.account]]
-address = "C8CMP5RkRQneDtYruTNWbRXihorfXpYh7JdEXjia1DJL"
-filename = "./test-accounts/escrow.json"
+address = "AwQnF2KCVfBQe2se1paZbVUNhwuUsBjtQx1fVoJrVYLy"
+filename = "./test-accounts/escrow0.json"
 
 [[test.validator.account]]
-address = "5mMpr6k2AzWVcAPjoJTgfQfbe9HCHTjTUPJm8TxragF"
-filename = "./test-accounts/gauge-voter.json"
+address = "H1ZPMW6SciyJ5aJVJu33TgRKnY9XaHqPjFj4cUzzV38x"
+filename = "./test-accounts/gauge-voter0.json"
 
 [[test.validator.account]]
-address = "E3NpYfVxUJbUH375vC6MpZE54NZrqc79hvE4U3pUgvou"
-filename = "./test-accounts/gauge-vote.json"
+address = "G2wsfQtPrCP5mhapEks2hpJC2mEHjWiffy686dMpJtgK"
+filename = "./test-accounts/gauge-vote0.json"
 
 [[test.validator.account]]
-address = "FXLMDGpLirbot2DY9JCmeKZtvu1TFaWSszE1Bd1kQAn"
-filename = "./test-accounts/escrow-no-vote.json"
+address = "D2kYyon9x19oeWYwd3jJ3ZQ6hv2LxWcqzUzsD2cMiZTZ"
+filename = "./test-accounts/escrow-no-vote0.json"
 
 [[test.validator.account]]
-address = "2VshMQTveehVLKvE6mMtxazzz2geq9DKtMJLTqFf79YN"
-filename = "./test-accounts/gauge-voter-no-vote.json"
+address = "3fsN8Q1b1VtuWmdgkcgnQ95cPnT6TmB9JkLEEWnWxwu4"
+filename = "./test-accounts/gauge-voter-no-vote0.json"
 
 [[test.validator.account]]
-address = "3KQwaioayMgkUkrKsDCkQUS7cKrKkqVFko5EhDqhjZjt"
-filename = "./test-accounts/gauge-vote-no-vote.json"
+address = "3xaSjw5MHPdT5JuucZYaQvv7xJRkpsSaVL5ZJRoeHWeD"
+filename = "./test-accounts/gauge-vote-no-vote0.json"
 
 [[test.validator.account]]
 address = "8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX"
-filename = "./test-accounts/locker.json"
+filename = "./test-accounts/locker0.json"
 
 [[test.validator.account]]
-address = "8J3ePFUwdqJLWN1YPN4fyueKjtmR8nVG7VYhKXXzAzGp"
-filename = "./test-accounts/epoch-gauge-voter.json"
+address = "FhPwKESBSrrkbdMWvPhde1KigF7fxh5VCuqHtDbmZuZG"
+filename = "./test-accounts/epoch-gauge-voter0.json"
 
 [[test.validator.account]]
-address = "HmeFZh5TPAM1iuuX8YPkKaAjy9P5vi4f1otP3hMWYhos"
-filename = "./test-accounts/epoch-gauge-vote.json"
+address = "3fY9Cu6D4g5Rs6jc4SergxS19NbbtBPR3Pz1N1grVd8W"
+filename = "./test-accounts/epoch-gauge-vote0.json"
+
+[[test.validator.account]]
+address = "28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU"
+filename = "./test-accounts/gaugemeister1.json"
+
+[[test.validator.account]]
+address = "3xC4eW6xhW3Gpb4T5sCKFe73ay2K4aUUfxL57XFdguJx"
+filename = "./test-accounts/gauge1.json"
+
+[[test.validator.account]]
+address = "bYKZLaz4xXSGiT8cWfd2bAzDyRrwxVk1q18wgxmKYJx"
+filename = "./test-accounts/epoch-gauge1.json"
+
+[[test.validator.account]]
+address = "3sZAm6LRNbzP6tJPmrYUzFrHj3RVQryf89awGKK8nwrX"
+filename = "./test-accounts/escrow1.json"
+
+[[test.validator.account]]
+address = "AiWzEhMQSpBRKoSPE1A747ShfUnbV7FAF3BgtbaryboF"
+filename = "./test-accounts/gauge-voter1.json"
+
+[[test.validator.account]]
+address = "9bHJGEdrbYHZ87KjjpVpjXXeutoRu2xL8U8CkRgWNVAk"
+filename = "./test-accounts/gauge-vote1.json"
+
+[[test.validator.account]]
+address = "DPZfTKn6XanbFNsqaSjDALgofW8RgMU84xxg1WMbLzmc"
+filename = "./test-accounts/escrow-no-vote1.json"
+
+[[test.validator.account]]
+address = "2nK9Cgi61t9cQmdn734YFML6QLQMJym91BbcU9oFjXng"
+filename = "./test-accounts/gauge-voter-no-vote1.json"
+
+[[test.validator.account]]
+address = "DGXPusVFk53mM82uEKkNMKGTFq4UJ1MExSP773N9ZchK"
+filename = "./test-accounts/gauge-vote-no-vote1.json"
+
+[[test.validator.account]]
+address = "8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX"
+filename = "./test-accounts/locker1.json"
+
+[[test.validator.account]]
+address = "BXyTZWGWZp2H1ZL7CfrteoaWsSiEC3YAQJrQgpurc5zA"
+filename = "./test-accounts/epoch-gauge-voter1.json"
+
+[[test.validator.account]]
+address = "BfQiPrPxVjUJzK3VbPfBA5FqtR7kKqQ2w1kFqyeSMpwN"
+filename = "./test-accounts/epoch-gauge-vote1.json"
 
 [toolchain]
 anchor_version = "0.29.0"

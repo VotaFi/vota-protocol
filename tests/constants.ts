@@ -12,3 +12,11 @@ export const GAUGE = new web3.PublicKey(
 export const GAUGEMEISTER = new web3.PublicKey(
   "28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU"
 );
+
+export const PROGRAM_ID = new web3.PublicKey(
+    "VotAjwzAEF9ZLNAYEB1ivXt51911EqYGVu9NeaEKRyy"
+);
+
+export const REWARD_PROGRAM_ID = new web3.PublicKey(
+    "rwRDmR2VVp8wJrU8rfavxYWJZrLe3aCStcAZrZcPZmQ"
+);

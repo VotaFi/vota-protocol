@@ -28,6 +28,12 @@ pub struct VoteMarketConfig {
     pub claim_fee: u16,
 }
 
+#[account]
+pub struct RewardAccumulatorConfig {
+    pub reward_accumulator_program: Pubkey,
+    pub namespace: [u8; 8]
+}
+
 impl VoteMarketConfig {
     pub const LEN: usize = 8 + 32 + 32 + 32 + 2;
 }

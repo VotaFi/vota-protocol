@@ -77,6 +77,7 @@ impl Root {
 }
 
 pub fn process_account<T: AccountDeserialize + AccountSerialize, F>(
+    set: u32,
     account_name: &str,
     new_address: Option<Pubkey>,
     data_update: F,
@@ -90,7 +91,7 @@ where
     let account = Root::from_string(&account_file)?;
     let new_address = new_address.unwrap_or(account.pubkey);
     accounts_to_update.push(AddressInfo {
-        name: format!("{}{}", account_name, file_suffix),
+        name: format!("{}{}{}", account_name, file_suffix, set),
         pubkey: new_address,
     });
     let mut account_data = account.get_account_data::<T>()?;
@@ -100,7 +101,7 @@ where
         .unwrap()
         .update_pubkey(&new_address)
         .unwrap();
-    updated_account.write_account_file(format!("{}{}", account_name, file_suffix).as_str())?;
+    updated_account.write_account_file(format!("{}{}{}", account_name, file_suffix, set).as_str())?;
     Ok((account_data, account))
 }
 
