@@ -1,4 +1,4 @@
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::retry_logic_goki;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -36,7 +36,7 @@ pub fn set_maximum(
         .args(vote_market::instruction::SetMaxAmount { epoch, max_amount })
         .instructions()
         .unwrap();
-    let result = retry_logic(client, payer, &mut ixs);
+    let result = retry_logic_goki(client, payer, &mut ixs);
     match result {
         Ok(sig) => {
             log::info!(target: "efficiency",

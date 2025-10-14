@@ -1,6 +1,6 @@
 use crate::accounts::resolve::{get_escrow_address_for_owner, resolve_vote_keys, VoteCreateStep};
 use crate::actions::create_epoch_gauge::create_epoch_gauge;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::retry_logic_goki;
 use crate::GAUGEMEISTER;
 use solana_client::rpc_client::RpcClient;
 use solana_program::instruction::AccountMeta;
@@ -33,7 +33,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                     data,
                 };
                 let mut ixs = vec![create_gauge_voter_ix];
-                let result = retry_logic(client, payer, &mut ixs);
+                let result = retry_logic_goki(client, payer, &mut ixs);
                 match result {
                     Ok(sig) => {
                         log::info!(target: "vote",
@@ -72,7 +72,7 @@ pub fn prepare_vote(client: &RpcClient, owner: Pubkey, gauge: Pubkey, payer: &Ke
                     data,
                 };
                 let mut ixs = vec![create_gauge_vote_ix];
-                let result = retry_logic(client, payer, &mut ixs);
+                let result = retry_logic_goki(client, payer, &mut ixs);
                 match result {
                     Ok(sig) => {
                         log::info!(target: "vote",

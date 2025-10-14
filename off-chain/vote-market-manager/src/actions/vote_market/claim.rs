@@ -98,7 +98,7 @@ pub fn claim(
         ixs.insert(0, ata_ix);
     }
 
-    let result = retry_logic::retry_logic(client, payer, &mut ixs);
+    let result = retry_logic::retry_logic_goki(client, payer, &mut ixs);
     //This worked once, but blockage expired will panic
     match result {
         Ok(sig) => {

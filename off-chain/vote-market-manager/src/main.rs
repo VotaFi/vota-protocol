@@ -22,7 +22,7 @@ mod errors;
 mod utils;
 
 const ANCHOR_DISCRIMINATOR_SIZE: usize = 8;
-const GAUGEMEISTER: Pubkey = pubkey!("28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU");
+const GAUGEMEISTER: Pubkey = pubkey!("HniSajyYDYEfdbNfW8L5Eq8W1pxt8XsYDgc6TNsx7t6x");
 
 const GOKI_OWNER: Pubkey = pubkey!("AMd2nnFYtPGkeEbUvyVtWRDkG3nrESCvNW4C43mEvWrF");
 
