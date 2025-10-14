@@ -52,26 +52,3 @@ pub fn create_logger() -> Result<(), Box<dyn Error>> {
         .init();
     Ok(())
 }
-
-pub fn connect_to_db() -> Result<Client, Box<dyn Error>> {
-    // Create Ssl postgres connector without verification
-    let mut builder = SslConnector::builder(SslMethod::tls()).map_err(|e| {
-        Box::new(VoteMarketManagerError::DatabaseConnection {
-            error: e.to_string(),
-        }) as Box<dyn Error>
-    })?;
-    builder.set_verify(SslVerifyMode::NONE);
-    let connector = MakeTlsConnector::new(builder.build());
-
-    // Connect to the PostgreSQL database
-    let connection = Client::connect(
-        &env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-        connector,
-    );
-    match connection {
-        Ok(client) => Ok(client),
-        Err(e) => Err(Box::new(VoteMarketManagerError::DatabaseConnection {
-            error: e.to_string(),
-        })),
-    }
-}

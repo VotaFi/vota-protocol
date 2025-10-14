@@ -4,7 +4,7 @@ use crate::accounts::resolve::{
 };
 use crate::actions::management::data::VoteInfo;
 use crate::actions::prepare_vote::prepare_vote;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::retry_logic_goki;
 use crate::GAUGEMEISTER;
 use anchor_lang::AnchorDeserialize;
 use solana_client::rpc_client::RpcClient;
@@ -72,7 +72,7 @@ pub fn vote(
             );
         }
 
-        let vote_result = retry_logic(client, script_authority, &mut vote_ixs);
+        let vote_result = retry_logic_goki(client, script_authority, &mut vote_ixs);
         match vote_result {
             Ok(sig) => {
                 log::info!(target: "vote",
@@ -124,7 +124,7 @@ pub fn vote(
                 data,
             };
             let mut ixs = vec![create_epoch_gauge_voter_ix];
-            let result = retry_logic(client, script_authority, &mut ixs);
+            let result = retry_logic_goki(client, script_authority, &mut ixs);
             match result {
                 Ok(sig) => {
                     log::info!(target: "vote",
@@ -194,7 +194,7 @@ pub fn vote(
 
     // chunk commit_ixs 4 at a time
     for chunk in commit_ixs.chunks(3) {
-        let commit_result = retry_logic(client, script_authority, &mut chunk.to_vec());
+        let commit_result = retry_logic_goki(client, script_authority, &mut chunk.to_vec());
         match commit_result {
             Ok(sig) => {
                 log::info!(target: "vote",

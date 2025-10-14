@@ -1,6 +1,6 @@
 use crate::accounts::resolve::{get_delegate, get_gauge_vote, get_gauge_voter};
 use crate::actions::management::utils;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::retry_logic_goki;
 use crate::{GAUGEMEISTER, LOCKER};
 use anchor_client::Client;
 use anchor_lang::AnchorDeserialize;
@@ -69,9 +69,12 @@ pub(crate) fn clear_votes(
         );
         println!("Clearing votes");
     }
+    println!("{:?}", vote_ixs);
 
     for chunk in vote_ixs.chunks(3) {
-        let result = retry_logic(client, script_authority, &mut chunk.to_vec());
+        println!("Got here");
+        let result = retry_logic_goki(client, script_authority, &mut chunk.to_vec());
+        println!("Result: {:?}", result);
         match result {
             Ok(sig) => {
                 log::info!(target: "vote",

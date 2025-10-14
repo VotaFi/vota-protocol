@@ -50,7 +50,7 @@ pub(crate) fn buy_votes(
         .args(vote_market::instruction::IncreaseVoteBuy { amount, epoch })
         .instructions()
         .unwrap();
-    let result = retry_logic::retry_logic(client, payer, &mut ixs);
+    let result = retry_logic::retry_logic_direct(client, payer, &mut ixs);
 
     match result {
         Ok(sig) => println!("Vote buy increased: {:?}", sig),

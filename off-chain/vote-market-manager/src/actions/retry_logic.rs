@@ -20,7 +20,7 @@ use solana_sdk::transaction::{Transaction, VersionedTransaction};
 use solana_sdk::{pubkey};
 use tokio::time::{Duration};
 
-pub fn retry_logic<'a>(
+pub fn retry_logic_goki<'a>(
     client: &'a RpcClient,
     payer: &'a Keypair,
     ixs: &'a mut Vec<Instruction>,
@@ -226,6 +226,200 @@ pub fn retry_logic<'a>(
                 min_context_slot: None,
             },
         );
+        println!("Transaction sent: {:?}", result);
+        match result {
+            Ok(sig) => {
+                let confirm_result = client.confirm_transaction_with_spinner(
+                    &sig,
+                    &blockhash,
+                    CommitmentConfig::confirmed(),
+                );
+                return match confirm_result {
+                    Ok(_) => {
+                        println!("Transaction confirmed: {:?}", sig);
+                        Ok(sig)
+                    }
+                    Err(e) => {
+                        println!("Error confirming transaction: {:?}", e);
+                        Err(Box::new(e))
+                    }
+                };
+            }
+            Err(e) => {
+                if tries == 10 {
+                    println!("Error sending transaction: {:?}", e);
+                    return Err(Box::new(e));
+                }
+            }
+        };
+        tries += 1;
+        println!("Retrying transaction {}", tries);
+    }
+}
+
+pub fn retry_logic_direct<'a>(
+    client: &'a RpcClient,
+    payer: &'a Keypair,
+    ixs: &'a Vec<Instruction>,
+) -> Result<Signature, Box<dyn std::error::Error>> {
+    let staked_rpc = env::var("STAKED_RPC").unwrap().to_string();
+    let send_client = RpcClient::new(staked_rpc);
+
+    // Simulate transaction first
+    let mut sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
+    let sim_strategy = Fixed::from_millis(1000).take(5);
+    let sim_result = retry::retry(sim_strategy, || {
+        let latest_blockhash = retry_rpc(|| {
+            client.get_latest_blockhash_with_commitment(CommitmentConfig::confirmed())
+        });
+        match latest_blockhash {
+            Ok((blockhash, _)) => sim_tx.sign(&[payer], blockhash),
+            Err(e) => {
+                return Err(RetryError {
+                    tries: 0,
+                    total_delay: Duration::from_millis(0),
+                    error: format!("RPC failed to get latest blockhash {:?}", e),
+                })
+            }
+        }
+        let sim = retry_rpc(|| {
+            client.simulate_transaction_with_config(&sim_tx, {
+                RpcSimulateTransactionConfig {
+                    replace_recent_blockhash: true,
+                    sig_verify: false,
+                    commitment: Some(CommitmentConfig::confirmed()),
+                    ..RpcSimulateTransactionConfig::default()
+                }
+            })
+        });
+        match sim {
+            Ok(sim) => {
+                println!("simulated: {:?}", sim);
+                if sim.value.err.is_some() {
+                    println!("Internal error simulating transaction, retry");
+                    return Err(RetryError {
+                        tries: 0,
+                        total_delay: std::time::Duration::from_millis(0),
+                        error: "RPC failed to simulate transaction".to_string(),
+                    });
+                }
+                Ok(sim)
+            }
+            Err(e) => {
+                println!("Error result simulating transaction, retry {:?}", e);
+                Err(RetryError {
+                    tries: 0,
+                    total_delay: std::time::Duration::from_millis(0),
+                    error: "RPC failed to simulate transaction".to_string(),
+                })
+            }
+        }
+    });
+
+    let cus = match sim_result {
+        Ok(sim) => {
+            println!("simulated: {:?}", sim);
+            if sim.value.err.is_some() {
+                println!("SIM ERROR: {:?}", sim.value.err);
+                return Err(Box::new(SimulationFailed {
+                    sim_info: sim.value.logs.unwrap().join(" "),
+                }));
+            } else if let Some(cus) = sim.value.units_consumed {
+                cus
+            } else {
+                return Err(Box::new(SimulationFailed {
+                    sim_info: "No units consumed".to_string(),
+                }));
+            }
+        }
+        Err(e) => {
+            println!("Error simulating transaction: {:?}", e);
+            return Err(Box::new(SimulationFailed {
+                sim_info: "Error simulating transaction".to_string(),
+            }));
+        }
+    };
+
+    let mut tries = 0;
+    println!("Consumed units: {}", cus);
+
+    loop {
+        let http_client = Client::new();
+        let blockhash = client.get_latest_blockhash()?;
+        
+        // Create fee estimation transaction
+        let fee_tx = VersionedTransaction::try_new(
+            VersionedMessage::V0(v0::Message::try_compile(
+                &payer.pubkey(),
+                ixs,
+                &get_lookup_tables(),
+                blockhash,
+            )?),
+            &[payer],
+        )?;
+        let b64_tx = base64::encode_block(&bincode::serialize(&fee_tx).unwrap());
+        let body = json!({
+            "jsonrpc": "2.0",
+            "id": "vota",
+            "method": "getPriorityFeeEstimate",
+            "params": [
+                {
+                    "transaction": &b64_tx,
+                    "options": {
+                        "transactionEncoding": "base64",
+                        "recommended": true,
+                    },
+                }
+            ]
+        });
+        
+        println!("Trying to get prio fee");
+        let response = http_client
+            .post("https://vota.boundlessendeavors.dev")
+            .json(&body)
+            .send()
+            .unwrap()
+            .text();
+        let data: Value = serde_json::from_str(&response.unwrap().to_string()).unwrap();
+        println!("Response: {:?}", &data);
+
+        let priority_fee: Value = data["result"]["priorityFeeEstimate"].clone();
+        let f64_priority_fee = priority_fee.as_f64().unwrap();
+        let ulamports_per_cu = ((f64_priority_fee * 1000000.0) as u64) / (cus + 2000);
+        println!("Ulamports per CU: {:?}", ulamports_per_cu);
+        
+        let cus_u32: u32 = cus.try_into().map_err(|_| SimulationFailed {
+            sim_info: "Failed to convert cus from u64 to u32".to_string(),
+        })?;
+        
+        // Build final transaction with compute budget instructions
+        let mut final_ixs: Vec<Instruction> = vec![
+            ComputeBudgetInstruction::set_compute_unit_limit(cus_u32 + 2000),
+            ComputeBudgetInstruction::set_compute_unit_price(ulamports_per_cu),
+        ];
+        final_ixs.extend_from_slice(ixs);
+
+        let tx = VersionedTransaction::try_new(
+            VersionedMessage::V0(v0::Message::try_compile(
+                &payer.pubkey(),
+                &final_ixs,
+                &get_lookup_tables(),
+                blockhash,
+            )?),
+            &[payer],
+        )?;
+        
+        let result = send_client.send_transaction_with_config(
+            &tx,
+            RpcSendTransactionConfig {
+                skip_preflight: false,
+                preflight_commitment: Some(CommitmentLevel::Confirmed),
+                encoding: None,
+                max_retries: Some(0),
+                min_context_slot: None,
+            },
+        );
+        
         println!("Transaction sent: {:?}", result);
         match result {
             Ok(sig) => {

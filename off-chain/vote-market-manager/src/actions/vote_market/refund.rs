@@ -1,5 +1,5 @@
 use crate::accounts::resolve::get_vote_buy;
-use crate::actions::retry_logic::retry_logic;
+use crate::actions::retry_logic::retry_logic_goki;
 use crate::GAUGEMEISTER;
 use anchor_client::Client;
 use solana_client::rpc_client::RpcClient;
@@ -40,7 +40,7 @@ pub(crate) fn get_refund(
         })
         .instructions()
         .unwrap();
-    let result = retry_logic(client, payer, &mut ixs);
+    let result = retry_logic_goki(client, payer, &mut ixs);
     match result {
         Ok(sig) => {
             log::info!(target: "refund",
