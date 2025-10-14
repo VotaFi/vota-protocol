@@ -3,8 +3,7 @@ use std::fmt::{Debug, Display};
 #[derive(Debug)]
 pub enum VoteMarketManagerError {
     AddressNotFound,
-    SimulationFailed { sim_info: String },
-    DatabaseConnection { error: String },
+    SimulationFailed { sim_info: String }
 }
 
 impl std::error::Error for VoteMarketManagerError {}
@@ -14,9 +13,6 @@ impl Display for VoteMarketManagerError {
             VoteMarketManagerError::AddressNotFound => write!(f, "Address not found"),
             VoteMarketManagerError::SimulationFailed { sim_info } => {
                 write!(f, "Simulation failed: {}", sim_info)
-            }
-            VoteMarketManagerError::DatabaseConnection { error } => {
-                write!(f, "Database connection error: {}", error)
             }
         }
     }

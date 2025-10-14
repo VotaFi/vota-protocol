@@ -50,7 +50,6 @@ use postgres::Client;
 /// ```
 pub(crate) fn calculate_inputs(
     client: &RpcClient,
-    db_client: &mut Client,
     config: &Pubkey,
     epoch: u32,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -75,15 +74,6 @@ pub(crate) fn calculate_inputs(
     fetch_token_prices(&mut prices, tokens)?;
     println!("finished to fetch here");
     println!("prices: {:?}", prices);
-
-    // Insert data into the `prices` table
-    for (token, price) in &prices {
-        let epoch = epoch as i32;
-        db_client.execute(
-            "INSERT INTO prices (epoch, price, token) VALUES ($1, $2, $3)",
-            &[&epoch, price, &token.to_string()],
-        )?;
-    }
 
     // Find direct votes
 
@@ -232,19 +222,6 @@ pub(crate) fn calculate_inputs(
     let total_votes = total_votes as i64;
     let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
     let total_delegated_votes = total_delegated_votes as i64;
-    db_client.execute(
-        "INSERT INTO epoch_vote_info (epoch, totalVotes, directVotes, delegatedVotes, totalVoteBuyValue, sbrPerEpoch, usdPerVote) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-        &[
-            &epoch,
-            &total_votes,
-            &total_power_vote_buy_gauges,
-            &total_delegated_votes,
-            &total_vote_buy_value,
-            &sbr_per_epoch,
-            &usd_per_vote
-        ]
-    )?;
-
     Ok(filename)
 }
 

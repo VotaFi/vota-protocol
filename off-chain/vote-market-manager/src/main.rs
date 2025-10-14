@@ -24,6 +24,8 @@ mod utils;
 const ANCHOR_DISCRIMINATOR_SIZE: usize = 8;
 const GAUGEMEISTER: Pubkey = pubkey!("28ZDtf6d2wsYhBvabTxUHTRT6MDxqjmqR7RMCp348tyU");
 
+const GOKI_OWNER: Pubkey = pubkey!("AMd2nnFYtPGkeEbUvyVtWRDkG3nrESCvNW4C43mEvWrF");
+
 const ADMIN: Pubkey = pubkey!("AmbWk325Nr67A5wpoHnxh967Zf4C5fQP9KHE3eeJQYWU");
 const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
 
@@ -718,7 +720,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             actions::create_token::create_token(&client, &payer);
         }
         Some(("buy-votes", matches)) => {
-            //TODO: bring out epoch
             println!("buy-votes");
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
             let gauge = Pubkey::from_str(matches.get_one::<String>("gauge").unwrap())?;
@@ -790,10 +791,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("calculate-inputs", matches)) => {
             let epoch = matches.get_one::<u32>("epoch").unwrap();
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
-            let mut db_client = utils::connect_to_db()?;
             let filename = actions::management::calculate_inputs::calculate_inputs(
                 &client,
-                &mut db_client,
                 &config,
                 *epoch,
             )?;

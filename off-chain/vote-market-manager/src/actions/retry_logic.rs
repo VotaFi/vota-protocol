@@ -27,6 +27,7 @@ pub fn retry_logic<'a>(
 ) -> Result<Signature, Box<dyn std::error::Error>> {
     let staked_rpc = env::var("STAKED_RPC").unwrap().to_string();
     let send_client = RpcClient::new(staked_rpc);
+    println!("Got there");
 
     let invoker = pubkey!("AMd2nnFYtPGkeEbUvyVtWRDkG3nrESCvNW4C43mEvWrF");
     let goki_program_id = pubkey!("GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH");

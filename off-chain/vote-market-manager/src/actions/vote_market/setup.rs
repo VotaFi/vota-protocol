@@ -1,4 +1,4 @@
-use crate::GAUGEMEISTER;
+use crate::{GAUGEMEISTER, GOKI_OWNER};
 
 use solana_program::pubkey::Pubkey;
 
@@ -25,8 +25,8 @@ pub fn setup(anchor_client: &anchor_client::Client<&Keypair>, mints: Vec<Pubkey>
         })
         .args(vote_market::instruction::CreateConfig {
             mints,
-            claim_fee: 600,
-            script_authority: payer.pubkey(),
+            claim_fee: 1500,
+            script_authority: GOKI_OWNER,
         })
         .send()
         .unwrap();

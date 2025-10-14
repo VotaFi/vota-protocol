@@ -69,9 +69,12 @@ pub(crate) fn clear_votes(
         );
         println!("Clearing votes");
     }
+    println!("{:?}", vote_ixs);
 
     for chunk in vote_ixs.chunks(3) {
+        println!("Got here");
         let result = retry_logic(client, script_authority, &mut chunk.to_vec());
+        println!("Result: {:?}", result);
         match result {
             Ok(sig) => {
                 log::info!(target: "vote",
