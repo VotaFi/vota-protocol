@@ -10,6 +10,7 @@ use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
+use sha2::{Sha256, Digest};
 
 use crate::accounts::resolve::{get_delegate, get_escrow_address_for_owner};
 use crate::actions::management::data::VoteInfo;
@@ -291,6 +292,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .required(true)
                         .value_parser(value_parser!(String))
                         .help("The new script authority for the config"),
+                ),
+        )
+        .subcommand(
+            clap::command!("update-reward-accumulator-config")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to set the reward accumulator for"),
+                )
+                .arg(
+                    clap::Arg::new("reward_accumulator_program")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The reward accumulator program id (pubkey)"),
+                )
+                .arg(
+                    clap::Arg::new("namespace")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("An 8-byte namespace string (will be truncated or padded to 8 bytes)"),
                 ),
         )
         .subcommand(clap::command!("create-token"))
@@ -904,6 +926,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &payer,
                 config,
                 new_script_authority,
+            )?;
+        }
+        Some(("update-reward-accumulator-config", matches)) => {
+            println!("update-reward-accumulator-config");
+            let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
+            let reward_accumulator_program = Pubkey::from_str(
+                matches.get_one::<String>("reward_accumulator_program").unwrap(),
+            )?;
+            let ns_str = matches.get_one::<String>("namespace").unwrap();
+            // Compute SHA-256 of the provided namespace string and take first 8 bytes
+            let mut hasher = Sha256::new();
+            hasher.update(ns_str.as_bytes());
+            let digest = hasher.finalize();
+            let mut namespace = [0u8; 8];
+            namespace.copy_from_slice(&digest[..8]);
+            actions::vote_market::update_reward_accumulator_config::update_reward_accumulator_config(
+                &client,
+                &anchor_client,
+                &payer,
+                config,
+                reward_accumulator_program,
+                namespace,
             )?;
         }
         _ => {

@@ -5486,6 +5486,7 @@ dependencies = [
  "retry",
  "serde",
  "serde_json",
+ "sha2 0.10.8",
  "solana-account-decoder",
  "solana-client",
  "solana-program",

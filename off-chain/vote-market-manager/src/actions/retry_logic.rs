@@ -83,20 +83,13 @@ pub fn retry_logic_goki<'a>(
 
     let mut sim_tx = Transaction::new_with_payer(&goki_ixs, Some(&payer.pubkey()));
     let sim_strategy = Fixed::from_millis(1000).take(5);
+    println!("going to sim");
     let sim_result = retry::retry(sim_strategy, || {
         let latest_blockhash = retry_rpc(|| {
             client.get_latest_blockhash_with_commitment(CommitmentConfig::confirmed())
         });
-        match latest_blockhash {
-            Ok((blockhash, _)) => sim_tx.sign(&[payer], blockhash),
-            Err(e) => {
-                return Err(RetryError {
-                    tries: 0,
-                    total_delay: Duration::from_millis(0),
-                    error: format!("RPC failed to get latest blockhash {:?}", e),
-                })
-            }
-        }
+        println!("got blockhash {:?}", latest_blockhash);
+        println!("really going to sim");
         let sim = retry_rpc(|| {
             client.simulate_transaction_with_config(&sim_tx, {
                 RpcSimulateTransactionConfig {
@@ -107,6 +100,7 @@ pub fn retry_logic_goki<'a>(
                 }
             })
         });
+        println!("got sim");
         match sim {
             Ok(sim) => {
                 println!("simulated: {:?}", sim);
@@ -216,6 +210,7 @@ pub fn retry_logic_goki<'a>(
             )?),
             &[payer],
         )?;
+        println!("Going to send");
         let result = send_client.send_transaction_with_config(
             &tx,
             RpcSendTransactionConfig {
@@ -269,19 +264,6 @@ pub fn retry_logic_direct<'a>(
     let mut sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
     let sim_strategy = Fixed::from_millis(1000).take(5);
     let sim_result = retry::retry(sim_strategy, || {
-        let latest_blockhash = retry_rpc(|| {
-            client.get_latest_blockhash_with_commitment(CommitmentConfig::confirmed())
-        });
-        match latest_blockhash {
-            Ok((blockhash, _)) => sim_tx.sign(&[payer], blockhash),
-            Err(e) => {
-                return Err(RetryError {
-                    tries: 0,
-                    total_delay: Duration::from_millis(0),
-                    error: format!("RPC failed to get latest blockhash {:?}", e),
-                })
-            }
-        }
         let sim = retry_rpc(|| {
             client.simulate_transaction_with_config(&sim_tx, {
                 RpcSimulateTransactionConfig {
