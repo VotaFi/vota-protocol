@@ -27,7 +27,7 @@ const GAUGEMEISTER: Pubkey = pubkey!("HniSajyYDYEfdbNfW8L5Eq8W1pxt8XsYDgc6TNsx7t
 const GOKI_OWNER: Pubkey = pubkey!("AMd2nnFYtPGkeEbUvyVtWRDkG3nrESCvNW4C43mEvWrF");
 
 const ADMIN: Pubkey = pubkey!("AmbWk325Nr67A5wpoHnxh967Zf4C5fQP9KHE3eeJQYWU");
-const LOCKER: Pubkey = pubkey!("8erad8kmNrLJDJPe9UkmTHomrMV3EW48sjGeECyVjbYX");
+const LOCKER: Pubkey = pubkey!("FqEk173TNsqe2maPozsaZk4AvaqpV3FKynyA5s7V4aNq");
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
