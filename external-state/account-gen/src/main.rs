@@ -10,7 +10,9 @@ use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::signer::keypair::read_keypair_file;
 use std::{env, fs};
 use std::fmt::format;
+use solana_sdk::pubkey;
 use toml::{Table, Value};
+use vote_market::state::VoteBuy;
 
 mod account;
 mod errors;
@@ -277,6 +279,35 @@ fn create_user_votes(
         &mut accounts_to_update,
         file_suffix,
     )?;
+
+
+    let (vote_buy_address, _) = Pubkey::find_program_address(
+        &[
+            b"vote-buy",
+            (gaugemeister_data.voting_epoch()? + set * 3).to_le_bytes().as_ref(),
+            config.key().as_ref(),
+            gauge.key().as_ref(),
+        ],
+        &vote_market::id(),
+    );
+    if file_suffix.eq("") {
+        println!("Vote buy address is {}", vote_buy_address );
+        process_account::<VoteBuy, _>(
+            set,
+            "vote-buy",
+            Some(vote_buy_address),
+            |mut data| {
+                data.buyer = payer.pubkey();
+                data.max_amount = Some(u64::MAX);
+                data.gauge = *gauge;
+                data.total_committed = 82_463_014_731;
+                data.mint = pubkey!("GHDAAvZHR6rPyMMGD869ujyQ2UTTiuk9vMkq97xKqvNr"); // mint.json in the test directory
+                data
+            },
+            &mut accounts_to_update,
+            file_suffix,
+        )?;
+    }
 
     Ok(gauge_vote_address)
 }

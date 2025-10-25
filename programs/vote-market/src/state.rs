@@ -14,10 +14,12 @@ pub struct VoteBuy {
     /// of the vault who is entitled to any incentives and is
     /// allowed to add additional funds.
     pub buyer: Pubkey,
+    /// The number of votes committed for this VoteBuy
+    pub total_committed: u64,
 }
 
 impl VoteBuy {
-    pub const LEN: usize = 8 + 32 + 32 + 8 + 1 + 8 + 32;
+    pub const LEN: usize = 8 + 32 + 32 + 8 + 1 + 8 + 32 + 8;
 }
 
 #[account]
@@ -31,7 +33,7 @@ pub struct VoteMarketConfig {
 #[account]
 pub struct RewardAccumulatorConfig {
     pub reward_accumulator_program: Pubkey,
-    pub namespace: [u8; 8]
+    pub namespace: [u8; 8],
 }
 
 impl VoteMarketConfig {

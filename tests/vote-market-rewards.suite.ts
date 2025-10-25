@@ -62,12 +62,32 @@ export function rewardsSuite(cfg: RunCfg) {
                 GAUGE_PROGRAM_ID
             ) as Program<Gauge>;
             it("Vote sellers can withdraw vote payment", async () => {
-                // Add payment
-                const { mint, ata } = await setupTokens(program, payer);
 
                 const config = web3.Keypair.fromSecretKey(
                     Uint8Array.from(JSON.parse(fs.readFileSync(cfg.rewardConfig, "utf-8")))
                 );
+                const gaugeMeisterData = await gaugeProgram.account.gaugemeister.fetch(
+                    GAUGEMEISTER
+                );
+                const rawMint = fs.readFileSync(process.env.MINT!, "utf-8");
+                const mintKey = web3.Keypair.fromSecretKey(Uint8Array.from(JSON.parse(rawMint)));
+                const epochBuffer = Buffer.alloc(4);
+                epochBuffer.writeUInt32LE(gaugeMeisterData.currentRewardsEpoch + 1);
+                // Get the mint
+                const [voteBuy, _] = anchor.web3.PublicKey.findProgramAddressSync(
+                    [
+                        Buffer.from("vote-buy"),
+                        epochBuffer,
+                        config.publicKey.toBuffer(),
+                        GAUGE.toBuffer(),
+                    ],
+                    program.programId
+                );
+
+                // Add payment
+                const { ata } = await setupTokens(program, payer, mintKey);
+                const mint = mintKey.publicKey;
+
 
                 const { allowedMints } = await setupConfig(program, [mint], config);
 
@@ -89,20 +109,6 @@ export function rewardsSuite(cfg: RunCfg) {
                     }).rpc();
                 }
 
-                var gaugeMeisterData = await gaugeProgram.account.gaugemeister.fetch(
-                    GAUGEMEISTER
-                );
-                const epochBuffer = Buffer.alloc(4);
-                epochBuffer.writeUInt32LE(gaugeMeisterData.currentRewardsEpoch + 1);
-                const [voteBuy, _] = anchor.web3.PublicKey.findProgramAddressSync(
-                    [
-                        Buffer.from("vote-buy"),
-                        epochBuffer,
-                        config.publicKey.toBuffer(),
-                        GAUGE.toBuffer(),
-                    ],
-                    program.programId
-                );
                 const tokenVault = getAssociatedTokenAddressSync(mint, voteBuy, true);
 
                 await program.methods
@@ -263,7 +269,7 @@ export function rewardsSuite(cfg: RunCfg) {
                         mint);
 
                     // Claim payment
-                    await program.methods.claimToRewardAccumulator(gaugeMeisterData.currentRewardsEpoch + 1)
+                    const tx = await program.methods.claimToRewardAccumulator(gaugeMeisterData.currentRewardsEpoch + 1)
                         .accounts({
                             scriptAuthority: nonSellerPayer.publicKey,
                             seller: program.provider.publicKey,
@@ -290,7 +296,6 @@ export function rewardsSuite(cfg: RunCfg) {
                             systemProgram: web3.SystemProgram.programId,
                         }).preInstructions([createAccountIx])
                         .signers([nonSellerPayer, payer]).rpc();
-
                     (await new Promise(resolve => setTimeout(resolve, 1500)));
                     sellerTokenAccountData = await getAccount(program.provider.connection, sellerRewardAta);
                     const expectedRewards = BigInt(18514);
@@ -313,8 +318,7 @@ export function rewardsSuite(cfg: RunCfg) {
                         await program.provider.connection.getMinimumBalanceForRentExemption(16);
                     expect(voteDelegateBalance).to.equal(expectedGaugeVoteRent);
                 } else {
-
-                    const claimSig = await program.methods
+                    await program.methods
                         .claimVotePayment(gaugeMeisterData.currentRewardsEpoch + 1)
                         .accounts({
                             scriptAuthority: nonSellerPayer.publicKey,

@@ -22,6 +22,7 @@ import dotenv  from "dotenv";
 import IDL from "../target/idl/vote_market.json"
 dotenv.config();
 
+
 export function votingSuite(cfg: RunCfg) {
     describe(`[${cfg.rewardStyle}] voting`, () => {
         // Configure the client to use the local cluster.
@@ -161,13 +162,18 @@ export function votingSuite(cfg: RunCfg) {
         });
         it("Buyers can add payment", async () => {
             const {mint, ata, mintAuth} = await setupTokens(program, payer);
-            const {config, allowedMints} = await setupConfig(program, [mint]);
+            const config = web3.Keypair.fromSecretKey(
+                Uint8Array.from(
+                    JSON.parse(fs.readFileSync(cfg.config, "utf-8"))
+                )
+            );
+            const { allowedMints} = await setupConfig(program, [mint], config);
             const gaugeMeisterData = await gaugeProgram.account.gaugemeister.fetch(
                 GAUGEMEISTER
             );
             const epochBuffer = Buffer.alloc(4);
             epochBuffer.writeUInt32LE(gaugeMeisterData.currentRewardsEpoch + 1);
-            const [voteBuy, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+            const [voteBuy, bump4] = anchor.web3.PublicKey.findProgramAddressSync(
                 [
                     Buffer.from("vote-buy"),
                     epochBuffer,
@@ -391,7 +397,17 @@ export function votingSuite(cfg: RunCfg) {
             );
 
             const voteAccount = await gaugeProgram.account.gaugeVote.fetch(gaugeVote);
-
+            const voteBuyEpochBuffer = Buffer.alloc(4);
+            voteBuyEpochBuffer.writeUInt32LE(gaugeMeisterData.currentRewardsEpoch + 1);
+            const [voteBuy, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+                [
+                    Buffer.from("vote-buy"),
+                    voteBuyEpochBuffer,
+                    config.publicKey.toBuffer(),
+                    GAUGE.toBuffer(),
+                ],
+                program.programId
+            );
             expect(voteAccount.weight).to.equal(0);
             const builder = program.methods.vote(100).accounts({
                 scriptAuthority: scriptAuthorityPayer.publicKey,
@@ -402,6 +418,7 @@ export function votingSuite(cfg: RunCfg) {
                 gaugeVote,
                 escrow,
                 voteDelegate: delegate,
+                voteBuy,
                 gaugeProgram: GAUGE_PROGRAM_ID,
             });
             const tx = await builder.transaction();
@@ -432,7 +449,7 @@ export function votingSuite(cfg: RunCfg) {
             const escrowData = await lockerProgram.account.escrow.fetch(escrow);
             const epochBuffer = Buffer.alloc(4);
             epochBuffer.writeUInt32LE(gaugeMeisterData.currentRewardsEpoch + 1);
-            let [epochGaugeVoter, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+            let [epochGaugeVoter, bump5] = anchor.web3.PublicKey.findProgramAddressSync(
                 [
                     Buffer.from("EpochGaugeVoter"),
                     gaugeVoter.toBuffer(),
@@ -483,12 +500,12 @@ export function votingSuite(cfg: RunCfg) {
                 epochGaugeVote,
                 voteDelegate: delegate,
                 scriptAuthority: scriptAuthorityPayer.publicKey,
+                voteBuy,
                 gaugeProgram: GAUGE_PROGRAM_ID
             });
             const commitVoteTx = await commitVoteBuilder.transaction();
             commitVoteTx.feePayer = scriptAuthorityPayer.publicKey;
             commitVoteTx.recentBlockhash = (await program.provider.connection.getLatestBlockhash("finalized")).blockhash;
-
             const commitVoteSig = await program.provider.connection.sendTransaction(
                 commitVoteTx,
                 [scriptAuthorityPayer],

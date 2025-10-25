@@ -55,6 +55,10 @@ address = "G2wsfQtPrCP5mhapEks2hpJC2mEHjWiffy686dMpJtgK"
 filename = "./test-accounts/gauge-vote0.json"
 
 [[test.validator.account]]
+address = "4nckLCn33Ep2mxpbH49LiqoHWYD16nv3Gvt3rP1V28oB"
+filename = "./test-accounts/vote-buy0.json"
+
+[[test.validator.account]]
 address = "D2kYyon9x19oeWYwd3jJ3ZQ6hv2LxWcqzUzsD2cMiZTZ"
 filename = "./test-accounts/escrow-no-vote0.json"
 
@@ -101,6 +105,10 @@ filename = "./test-accounts/gauge-voter1.json"
 [[test.validator.account]]
 address = "9bHJGEdrbYHZ87KjjpVpjXXeutoRu2xL8U8CkRgWNVAk"
 filename = "./test-accounts/gauge-vote1.json"
+
+[[test.validator.account]]
+address = "HD7oozu4CRhAB3xDYA4o4rhZZb56b2PkmfccHXNq6Dxt"
+filename = "./test-accounts/vote-buy1.json"
 
 [[test.validator.account]]
 address = "DPZfTKn6XanbFNsqaSjDALgofW8RgMU84xxg1WMbLzmc"
