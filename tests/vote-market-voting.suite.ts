@@ -458,7 +458,6 @@ export function votingSuite(cfg: RunCfg) {
                 GAUGE_PROGRAM_ID
             );
 
-            console.log("prepare epoch gauge");
             // Create epoch gauge voter
             const sig3 = await gaugeProgram.methods.prepareEpochGaugeVoterV2().accounts({
                 gaugemeister: GAUGEMEISTER,

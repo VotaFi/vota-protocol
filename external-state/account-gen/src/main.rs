@@ -230,6 +230,7 @@ fn create_user_votes(
         |mut escrow_data| {
             escrow_data.owner = payer.pubkey();
             escrow_data.vote_delegate = vote_delegate_address;
+            escrow_data.escrow_ends_at = 2_000_000_000;
             escrow_data
         },
         &mut accounts_to_update,

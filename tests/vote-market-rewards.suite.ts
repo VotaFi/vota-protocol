@@ -298,7 +298,7 @@ export function rewardsSuite(cfg: RunCfg) {
                         .signers([nonSellerPayer, payer]).rpc();
                     (await new Promise(resolve => setTimeout(resolve, 1500)));
                     sellerTokenAccountData = await getAccount(program.provider.connection, sellerRewardAta);
-                    const expectedRewards = BigInt(18514);
+                    const expectedRewards = BigInt(18204);
                     const expectedFee = (expectedRewards * BigInt(600)) / BigInt(10_000);
                     expect(sellerTokenAccountData.amount).to.equal(
                         expectedRewards - expectedFee
