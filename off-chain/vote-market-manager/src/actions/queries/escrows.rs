@@ -61,10 +61,10 @@ pub(crate) fn get_escrow_votes(client: &RpcClient, delegate: &Pubkey, gauge: &Pu
         let power = escrow.voting_power_at_time(&locker_data.params, gaugemeister_data.next_epoch_starts_at as i64);
         match power {
             Some(power) => {
-                if power < 1000000000 {
-                    continue;
-                }
-            //    println!("account: {:?}, power: {:?}", key, power);
+                // if power < 1000000000 {
+                //     continue;
+                // }
+                println!("account: {:?}, power: {:?}", key, power);
             }
             None => {
                 return;

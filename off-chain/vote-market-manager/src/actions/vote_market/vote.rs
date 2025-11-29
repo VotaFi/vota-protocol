@@ -1,7 +1,4 @@
-use crate::accounts::resolve::{
-    get_delegate, get_epoch_gauge_voter, get_escrow_address_for_owner, get_gauge_voter,
-    resolve_vote_keys,
-};
+use crate::accounts::resolve::{get_delegate, get_epoch_gauge_voter, get_escrow_address_for_owner, get_gauge_voter, get_vote_buy, resolve_vote_keys};
 use crate::actions::management::data::VoteInfo;
 use crate::actions::prepare_vote::prepare_vote;
 use crate::actions::retry_logic::retry_logic_goki;
@@ -164,6 +161,7 @@ pub fn vote(
         if epoch_gauge_vote_account.is_ok() {
             continue;
         }
+        let vote_buy = get_vote_buy(&config, &weight.gauge, epoch);
         // Commit vote
         commit_ixs.extend(
             program
@@ -181,6 +179,7 @@ pub fn vote(
                     epoch_gauge_voter: vote_accounts.epoch_gauge_voter,
                     epoch_gauge_vote: vote_accounts.epoch_gauge_vote,
                     vote_delegate,
+                    vote_buy,
                     gauge_program: gauge_state::id(),
                     system_program: solana_program::system_program::id(),
                 })
