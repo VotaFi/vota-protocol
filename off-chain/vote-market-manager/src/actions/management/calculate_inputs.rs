@@ -20,7 +20,6 @@ use std::error::Error;
 use std::fs;
 use vote_market::state::VoteBuy;
 
-use postgres::Client;
 
 /// Creates a json file containing all the data needed to calculate algorithmic
 /// vote weights and the maximum amount of vote buys that meet the efficiency
@@ -218,10 +217,10 @@ pub(crate) fn calculate_inputs(
     fs::write(&filename, epoch_stats_json)?;
 
     // Insert into the epoch_vote_info table
-    let epoch = epoch as i32;
-    let total_votes = total_votes as i64;
-    let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
-    let total_delegated_votes = total_delegated_votes as i64;
+    // let epoch = epoch as i32;
+    // let total_votes = total_votes as i64;
+    // let total_power_vote_buy_gauges = total_power_vote_buy_gauges as i64;
+    // let total_delegated_votes = total_delegated_votes as i64;
     Ok(filename)
 }
 

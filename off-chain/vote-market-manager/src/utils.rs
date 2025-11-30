@@ -1,14 +1,10 @@
-use crate::errors::VoteMarketManagerError;
 use chrono::Utc;
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use postgres::Client;
-use postgres_openssl::MakeTlsConnector;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
 use std::error::Error;
 use std::path::Path;
-use std::{env, fs};
+use std::{fs};
 use structured_logger::json::new_writer;
 use structured_logger::Builder;
 

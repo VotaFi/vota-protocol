@@ -113,6 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .help("The config to generate the delegate from"),
             ),
         )
+        .subcommand(clap::command!("undelegate"))
         .subcommand(
             clap::command!("reset-epoch-gauge-voter")
                 .arg(
@@ -598,6 +599,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let delegate = accounts::resolve::get_delegate(&config);
             println!("delegate: {:?}", delegate);
             actions::delegate::delegate(client, &escrow, &delegate, &payer);
+        }
+        Some(("undelegate", _)) => {
+            let escrow = get_escrow_address_for_owner(&payer.pubkey());
+            crate::actions::delegate::undelegate(client, &escrow, &payer);
         }
         Some(("reset-epoch-gauge-voter", matches)) => {
             let owner = Pubkey::from_str(matches.get_one::<String>("owner").unwrap())?;

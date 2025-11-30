@@ -81,7 +81,7 @@ pub fn retry_logic_goki<'a>(
         })
         .collect();
 
-    let mut sim_tx = Transaction::new_with_payer(&goki_ixs, Some(&payer.pubkey()));
+    let sim_tx = Transaction::new_with_payer(&goki_ixs, Some(&payer.pubkey()));
     let sim_strategy = Fixed::from_millis(1000).take(5);
     println!("going to sim");
     let sim_result = retry::retry(sim_strategy, || {
@@ -108,7 +108,7 @@ pub fn retry_logic_goki<'a>(
                     println!("Internal error simulating transaction, retry");
                     return Err(RetryError {
                         tries: 0,
-                        total_delay: std::time::Duration::from_millis(0),
+                        total_delay: Duration::from_millis(0),
                         error: "RPC failed to simulate transaction".to_string(),
                     });
                 }
@@ -261,7 +261,7 @@ pub fn retry_logic_direct<'a>(
     let send_client = RpcClient::new(staked_rpc);
 
     // Simulate transaction first
-    let mut sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
+    let sim_tx = Transaction::new_with_payer(ixs, Some(&payer.pubkey()));
     let sim_strategy = Fixed::from_millis(1000).take(5);
     let sim_result = retry::retry(sim_strategy, || {
         let sim = retry_rpc(|| {
