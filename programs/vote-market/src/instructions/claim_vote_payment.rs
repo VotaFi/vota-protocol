@@ -172,30 +172,32 @@ pub fn claim_vote_payment(ctx: Context<ClaimVotePayment>, epoch: u32) -> Result<
             &[bump],
         ]],
     )?;
-    let transfer_to_treasury_ix = spl_token::instruction::transfer(
-        &ctx.accounts.token_program.key(),
-        &ctx.accounts.token_vault.key(),
-        &ctx.accounts.treasury.key(),
-        &vote_buy.key(),
-        &[],
-        fee,
-    )?;
-    invoke_signed(
-        &transfer_to_treasury_ix,
-        &[
-            ctx.accounts.token_vault.to_account_info(),
-            ctx.accounts.treasury.to_account_info(),
-            ctx.accounts.vote_buy.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-        ],
-        &[&[
-            b"vote-buy".as_ref(),
-            epoch.to_le_bytes().as_ref(),
-            ctx.accounts.config.key().as_ref(),
-            ctx.accounts.gauge.key().as_ref(),
-            &[bump],
-        ]],
-    )?;
+    if fee != 0 {
+        let transfer_to_treasury_ix = spl_token::instruction::transfer(
+            &ctx.accounts.token_program.key(),
+            &ctx.accounts.token_vault.key(),
+            &ctx.accounts.treasury.key(),
+            &vote_buy.key(),
+            &[],
+            fee,
+        )?;
+        invoke_signed(
+            &transfer_to_treasury_ix,
+            &[
+                ctx.accounts.token_vault.to_account_info(),
+                ctx.accounts.treasury.to_account_info(),
+                ctx.accounts.vote_buy.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+            ],
+            &[&[
+                b"vote-buy".as_ref(),
+                epoch.to_le_bytes().as_ref(),
+                ctx.accounts.config.key().as_ref(),
+                ctx.accounts.gauge.key().as_ref(),
+                &[bump],
+            ]],
+        )?;
+    }
 
     //Calculating the discriminator manually instead of including the crate
     //because the anchor_lang version of gauge is not compatible with this program.

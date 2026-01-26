@@ -10,7 +10,7 @@ pub struct Vote<'info> {
     pub script_authority: Signer<'info>,
     #[account(owner = gauge_state::id())]
     pub gaugemeister: Account<'info, gauge_state::Gaugemeister>,
-    #[account(has_one = gaugemeister, constraint = !gauge.is_disabled)]
+    #[account(has_one = gaugemeister)]
     pub gauge: Account<'info, gauge_state::Gauge>,
     #[account(mut,
     seeds=[b"GaugeVoter",
