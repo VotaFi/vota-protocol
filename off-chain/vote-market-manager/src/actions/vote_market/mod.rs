@@ -6,6 +6,7 @@ pub(crate) mod clear_votes;
 pub(crate) mod refund;
 pub(crate) mod set_maximum;
 pub(crate) mod setup;
+pub(crate) mod update_claim_fee;
 pub(crate) mod update_mints;
 pub(crate) mod vote;
 pub(crate) mod update_reward_accumulator_config;

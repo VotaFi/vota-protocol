@@ -72,6 +72,10 @@ pub mod vote_market {
         instructions::commit_vote::commit_vote(ctx, epoch)
     }
 
+    pub fn revert_vote(ctx: Context<RevertVote>, epoch: u32) -> Result<()> {
+        instructions::revert_vote::revert_vote(ctx, epoch)
+    }
+
     pub fn set_max_amount(ctx: Context<SetMaxAmount>, epoch: u32, max_amount: u64) -> Result<()> {
         instructions::set_max_amount::set_max_amount(ctx, epoch, max_amount)
     }

@@ -9,6 +9,7 @@ pub mod claim_vote_payment;
 pub mod claim_to_reward_accumulator;
 pub mod vote;
 pub mod commit_vote;
+pub mod revert_vote;
 pub mod set_max_amount;
 pub mod vote_buy_refund;
 
@@ -23,6 +24,7 @@ pub use claim_vote_payment::*;
 pub use claim_to_reward_accumulator::*;
 pub use vote::*;
 pub use commit_vote::*;
+pub use revert_vote::*;
 pub use set_max_amount::*;
 pub use vote_buy_refund::*;
 

@@ -296,6 +296,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ),
         )
         .subcommand(
+            clap::command!("update-claim-fee")
+                .arg(
+                    clap::Arg::new("config")
+                        .required(true)
+                        .value_parser(value_parser!(String))
+                        .help("The config to update the claim fee for"),
+                )
+                .arg(
+                    clap::Arg::new("claim_fee")
+                        .required(true)
+                        .value_parser(value_parser!(u16))
+                        .help("The new claim fee (in basis points)"),
+                ),
+        )
+        .subcommand(
             clap::command!("update-reward-accumulator-config")
                 .arg(
                     clap::Arg::new("config")
@@ -778,7 +793,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
         Some(("set-maximum", matches)) => {
-            //TODO: bring out epoch
             let maximum = matches.get_one::<u64>("max").unwrap();
             let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
             let gauge = Pubkey::from_str(matches.get_one::<String>("gauge").unwrap())?;
@@ -931,6 +945,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &payer,
                 config,
                 new_script_authority,
+            )?;
+        }
+        Some(("update-claim-fee", matches)) => {
+            let config = Pubkey::from_str(matches.get_one::<String>("config").unwrap())?;
+            let claim_fee = matches.get_one::<u16>("claim_fee").unwrap();
+            actions::vote_market::update_claim_fee::update_claim_fee(
+                &client,
+                &anchor_client,
+                &payer,
+                config,
+                *claim_fee,
             )?;
         }
         Some(("update-reward-accumulator-config", matches)) => {

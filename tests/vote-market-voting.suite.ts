@@ -51,11 +51,13 @@ export function votingSuite(cfg: RunCfg) {
         });
         const gaugeProgram = new Program(
             GAUGE_IDL as any,
-            GAUGE_PROGRAM_ID
+            GAUGE_PROGRAM_ID,
+            provider
         ) as Program<Gauge>;
         const lockerProgram = new Program(
             LOCKER_IDL as any,
-            LOCKED_VOTER_PROGRAM_ID
+            LOCKED_VOTER_PROGRAM_ID,
+            provider
         );
         it("Creates a config account", async () => {
             const {config, allowedMints, allowedMintList, scriptAuthority} =
@@ -521,6 +523,124 @@ export function votingSuite(cfg: RunCfg) {
                 },
                 "confirmed"
             );
+
+            // Check if commit succeeded
+            const commitTxResult = await program.provider.connection.getTransaction(commitVoteSig, {commitment: "confirmed", maxSupportedTransactionVersion: 0});
+            if (commitTxResult?.meta?.err) {
+                console.log("commit vote FAILED:", JSON.stringify(commitTxResult.meta.err));
+                console.log("commit vote logs:", commitTxResult.meta.logMessages);
+                throw new Error("commit vote failed: " + JSON.stringify(commitTxResult.meta.err));
+            }
+            console.log("commit vote succeeded");
+
+            // ── REVERT VOTE ──
+            console.log("reverting vote for epoch:", gaugeMeisterData.currentRewardsEpoch + 1);
+
+            const revertVoteTx = await program.methods
+                .revertVote(gaugeMeisterData.currentRewardsEpoch + 1)
+                .accounts({
+                    config: config.publicKey,
+                    scriptAuthority: scriptAuthorityPayer.publicKey,
+                    gaugemeister: GAUGEMEISTER,
+                    gauge: GAUGE,
+                    gaugeVoter,
+                    gaugeVote,
+                    epochGauge,
+                    epochGaugeVoter,
+                    escrow,
+                    epochGaugeVote,
+                    voteBuy,
+                    voteDelegate: delegate,
+                    gaugeProgram: GAUGE_PROGRAM_ID,
+                    systemProgram: web3.SystemProgram.programId,
+                })
+                .transaction();
+            revertVoteTx.feePayer = scriptAuthorityPayer.publicKey;
+            revertVoteTx.recentBlockhash = (
+                await program.provider.connection.getLatestBlockhash("finalized")
+            ).blockhash;
+            const revertVoteSig = await program.provider.connection.sendTransaction(
+                revertVoteTx,
+                [scriptAuthorityPayer],
+                { skipPreflight: true }
+            );
+            await program.provider.connection.confirmTransaction(
+                {
+                    signature: revertVoteSig,
+                    ...(await program.provider.connection.getLatestBlockhash()),
+                },
+                "confirmed"
+            );
+
+            const revertTxResult = await program.provider.connection.getTransaction(revertVoteSig, {commitment: "confirmed", maxSupportedTransactionVersion: 0});
+            if (revertTxResult?.meta?.err) {
+                console.log("revert vote FAILED:", JSON.stringify(revertTxResult.meta.err));
+                console.log("revert vote logs:", revertTxResult.meta.logMessages);
+                throw new Error("revert vote failed: " + JSON.stringify(revertTxResult.meta.err));
+            }
+            console.log("revert vote succeeded");
+
+            // Verify EpochGaugeVote is closed
+            const epochGaugeVoteAfter = await program.provider.connection.getAccountInfo(epochGaugeVote);
+            expect(epochGaugeVoteAfter).to.be.null;
+            console.log("epochGaugeVote closed successfully after revert");
+
+            // ── RESET EPOCH GAUGE VOTER ──
+            console.log("resetting epoch gauge voter");
+            const escrowDataForReset = await lockerProgram.account.escrow.fetch(escrow);
+            await gaugeProgram.methods.resetEpochGaugeVoter().accounts({
+                gaugemeister: GAUGEMEISTER,
+                locker: escrowDataForReset.locker,
+                escrow,
+                gaugeVoter,
+                epochGaugeVoter,
+            }).signers([payer]).rpc();
+            console.log("reset epoch gauge voter succeeded");
+
+            // ── RE-COMMIT VOTE ──
+            console.log("re-committing vote after revert");
+            const recommitVoteBuilder = program.methods.commitVote(gaugeMeisterData.currentRewardsEpoch + 1).accounts({
+                config: config.publicKey,
+                gaugemeister: GAUGEMEISTER,
+                gauge: GAUGE,
+                gaugeVote,
+                gaugeVoter,
+                epochGauge,
+                epochGaugeVoter,
+                epochGaugeVote,
+                voteDelegate: delegate,
+                scriptAuthority: scriptAuthorityPayer.publicKey,
+                voteBuy,
+                gaugeProgram: GAUGE_PROGRAM_ID
+            });
+            const recommitVoteTx = await recommitVoteBuilder.transaction();
+            recommitVoteTx.feePayer = scriptAuthorityPayer.publicKey;
+            recommitVoteTx.recentBlockhash = (await program.provider.connection.getLatestBlockhash("finalized")).blockhash;
+            const recommitVoteSig = await program.provider.connection.sendTransaction(
+                recommitVoteTx,
+                [scriptAuthorityPayer],
+                { skipPreflight: true }
+            );
+            await program.provider.connection.confirmTransaction(
+                {
+                    signature: recommitVoteSig,
+                    ...(await program.provider.connection.getLatestBlockhash()),
+                },
+                "confirmed"
+            );
+
+            const recommitTxResult = await program.provider.connection.getTransaction(recommitVoteSig, {commitment: "confirmed", maxSupportedTransactionVersion: 0});
+            if (recommitTxResult?.meta?.err) {
+                console.log("re-commit vote FAILED:", JSON.stringify(recommitTxResult.meta.err));
+                console.log("re-commit vote logs:", recommitTxResult.meta.logMessages);
+                throw new Error("re-commit vote failed: " + JSON.stringify(recommitTxResult.meta.err));
+            }
+            console.log("re-commit vote succeeded");
+
+            // Verify EpochGaugeVote exists again
+            const epochGaugeVoteRecommit = await program.provider.connection.getAccountInfo(epochGaugeVote);
+            expect(epochGaugeVoteRecommit).to.not.be.null;
+            console.log("epochGaugeVote re-created successfully after re-commit");
         });
     });
 }

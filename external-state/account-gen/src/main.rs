@@ -9,7 +9,6 @@ use locked_voter_state::{Escrow, Locker};
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::signer::keypair::read_keypair_file;
 use std::{env, fs};
-use std::fmt::format;
 use solana_sdk::pubkey;
 use toml::{Table, Value};
 use vote_market::state::VoteBuy;
@@ -80,7 +79,10 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             set,
             "epoch-gauge",
             Some(epoch_gauge_address),
-            |x| x,
+            |mut x| {
+                x.voting_epoch = gaugemeister_data.voting_epoch().unwrap() + set * 3;
+                x
+            },
             &mut accounts_to_update,
             "",
         )?;
